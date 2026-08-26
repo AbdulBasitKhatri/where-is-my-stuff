@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import storage from '../utils/storage';
@@ -23,14 +23,14 @@ export default function ItemDetailsScreen() {
     })();
   }, [id]);
 
-  const { colors } = useTheme();
+  const { colors, defaultCurrency } = useTheme();
 
   const saveRepair = async () => {
     if (!form.date || !form.provider) {
       Alert.alert('Validation', 'Please provide date and provider.');
       return;
     }
-    const newRepair = { id: Date.now().toString(), date: form.date, cost: parseFloat(form.cost) || 0, provider: form.provider, description: form.description };
+    const newRepair = { id: Date.now().toString(), date: form.date, cost: parseFloat(form.cost) || 0, provider: form.provider, description: form.description, currency: repairCurrency, currencySymbol: repairCurrencySymbol };
     try {
       await storage.saveRepair(id, newRepair);
       const list = await storage.getRepairs(id);
@@ -46,13 +46,31 @@ export default function ItemDetailsScreen() {
     <View style={[styles.repairCard, { backgroundColor: colors.card }]}> 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text style={[styles.repairProvider, { color: colors.text }]}>{item.provider}</Text>
-        <Text style={[styles.repairCost, { color: colors.danger }]}>{`$${(item.cost || 0).toFixed(2)}`}</Text>
+        <Text style={[styles.repairCost, { color: colors.danger }]}>{`${item.currencySymbol || repairCurrencySymbol || '$'}${(item.cost || 0).toFixed(2)}`}</Text>
       </View>
       <Text style={[styles.repairDesc, { color: colors.textMuted }]}>{item.description}</Text>
       <Text style={[styles.repairDate, { color: colors.textMuted }]}>{item.date}</Text>
     </View>
   );
+ 
 
+  const POPULAR_CURRENCIES = [
+    { code: 'USD', name: 'US Dollar', symbol: '$' },
+    { code: 'EUR', name: 'Euro', symbol: '€' },
+    { code: 'GBP', name: 'British Pound', symbol: '£' },
+    { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+    { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$' },
+    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+    { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+    { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  ];
+
+  const [repairCurrencyModalVisible, setRepairCurrencyModalVisible] = useState(false);
+  const [repairCurrency, setRepairCurrency] = useState(defaultCurrency?.code || 'USD');
+  const [repairCurrencySymbol, setRepairCurrencySymbol] = useState(defaultCurrency?.symbol || '$');
+  const [parentCurrencyLoaded, setParentCurrencyLoaded] = useState(false);
+  const [parentItemCurrency, setParentItemCurrency] = useState(null);
   const ListHeader = () => (
     <>
       <View style={[styles.headerBox, { backgroundColor: colors.card }]}> 
@@ -64,32 +82,26 @@ export default function ItemDetailsScreen() {
     </>
   );
 
-  const ListFooter = () => (
-    <>
-      {showForm ? (
-        <View style={{ marginTop: 12 }}>
-          <Text style={[styles.label, { color: colors.text }]}>Date</Text>
-          <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} blurOnSubmit={false} />
-          <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
-          <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} placeholder="e.g. Apple Store" placeholderTextColor={colors.textMuted} value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} blurOnSubmit={false} />
-          <Text style={[styles.label, { color: colors.text }]}>Cost ($)</Text>
-          <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} placeholder="e.g. 120.00" placeholderTextColor={colors.textMuted} keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} blurOnSubmit={false} />
-          <Text style={[styles.label, { color: colors.text }]}>Description</Text>
-          <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]} placeholder="What was done" placeholderTextColor={colors.textMuted} multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} blurOnSubmit={false} />
-          <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8, borderColor: colors.primary }]} onPress={saveRepair}>
-            <Text style={[styles.addRepairText, { color: colors.primary }]}>Save Repair</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: colors.card, marginTop: 8 }]} onPress={() => setShowForm(false)}>
-            <Text style={{ color: colors.textMuted }}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.addRepairBtn} onPress={() => setShowForm(true)}>
-          <Text style={styles.addRepairText}>+ Log New Repair</Text>
-        </TouchableOpacity>
-      )}
-    </>
-  );
+  // load parent item to inherit currency if available
+  useEffect(() => {
+    (async () => {
+      try {
+        const items = await storage.getItems();
+        const it = (items || []).find((i) => String(i.id) === String(id));
+        if (it && it.currency) {
+          setRepairCurrency(it.currency || defaultCurrency?.code);
+          setRepairCurrencySymbol(it.currencySymbol || defaultCurrency?.symbol);
+          setParentItemCurrency(it.currency);
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        setParentCurrencyLoaded(true);
+      }
+    })();
+  }, [id]);
+
+  // ListFooter removed; form is rendered outside the FlatList to avoid remounting inputs while typing
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -99,11 +111,134 @@ export default function ItemDetailsScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           ListHeaderComponent={ListHeader}
-          ListFooterComponent={ListFooter}
           ListEmptyComponent={<Text style={{ color: colors.textMuted, paddingTop: 8 }}>No repairs logged yet.</Text>}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 8 }}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
         />
+
+        {/* Render footer/form outside of FlatList to avoid remounting the inputs while typing */}
+        <View style={{ paddingTop: 12 }}>
+          {showForm ? (
+            <View>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TouchableOpacity
+                  style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => setRepairCurrencyModalVisible(true)}
+                >
+                  <Text style={[styles.currencyCodeText, { color: colors.text }]}>{repairCurrency}</Text>
+                  <Text style={[styles.currencySymbolText, { color: colors.text }]}>{repairCurrencySymbol}</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text }]}
+                  placeholder="e.g. 120.00"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                  value={form.cost}
+                  onChangeText={(t) => setForm((s) => ({ ...s, cost: t }))}
+                  blurOnSubmit={false}
+                />
+              </View>
+
+              <Text style={[styles.label, { color: colors.text }]}>Date</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text }]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textMuted}
+                value={form.date}
+                onChangeText={(t) => setForm((s) => ({ ...s, date: t }))}
+                blurOnSubmit={false}
+              />
+
+              <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text }]}
+                placeholder="e.g. Apple Store"
+                placeholderTextColor={colors.textMuted}
+                value={form.provider}
+                onChangeText={(t) => setForm((s) => ({ ...s, provider: t }))}
+                blurOnSubmit={false}
+              />
+
+              <Text style={[styles.label, { color: colors.text }]}>Cost ({repairCurrency})</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text }]}
+                placeholder="e.g. 120.00"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                value={form.cost}
+                onChangeText={(t) => setForm((s) => ({ ...s, cost: t }))}
+                blurOnSubmit={false}
+              />
+
+              <Text style={[styles.label, { color: colors.text }]}>Description</Text>
+              <TextInput
+                style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]}
+                placeholder="What was done"
+                placeholderTextColor={colors.textMuted}
+                multiline
+                value={form.description}
+                onChangeText={(t) => setForm((s) => ({ ...s, description: t }))}
+                blurOnSubmit={false}
+              />
+
+              <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8, borderColor: colors.primary }]} onPress={saveRepair}>
+                <Text style={[styles.addRepairText, { color: colors.primary }]}>Save Repair</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: colors.card, marginTop: 8 }]} onPress={() => setShowForm(false)}>
+                <Text style={{ color: colors.textMuted }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.addRepairBtn} onPress={() => setShowForm(true)}>
+              <Text style={styles.addRepairText}>+ Log New Repair</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Repair Currency Picker Modal */}
+          <Modal
+            visible={repairCurrencyModalVisible}
+            animationType="slide"
+            transparent
+            onRequestClose={() => setRepairCurrencyModalVisible(false)}
+          >
+            <TouchableOpacity
+              style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.modalOverlay }}
+              activeOpacity={1}
+              onPress={() => setRepairCurrencyModalVisible(false)}
+            >
+              <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%', padding: 20 }} onStartShouldSetResponder={() => true}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Select Currency</Text>
+                  <TouchableOpacity onPress={() => setRepairCurrencyModalVisible(false)}>
+                    <Text style={{ color: colors.textMuted }}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <FlatList
+                  data={POPULAR_CURRENCIES}
+                  keyExtractor={(it) => it.code}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8 }}
+                      onPress={() => {
+                        setRepairCurrency(item.code);
+                        setRepairCurrencySymbol(item.symbol);
+                        setRepairCurrencyModalVisible(false);
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text, width: 45 }}>{item.code}</Text>
+                        <Text style={{ fontSize: 14, color: colors.textMuted }}>{item.name}</Text>
+                      </View>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{item.symbol}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -125,4 +260,22 @@ const styles = StyleSheet.create({
   repairDate: { color: '#71717A', fontSize: 12 },
   addRepairBtn: { borderStyle: 'dashed', borderWidth: 1, borderColor: '#6366F1', padding: 14, borderRadius: 8, alignItems: 'center', marginTop: 12 },
   addRepairText: { color: '#6366F1', fontSize: 15, fontWeight: '600' },
+  currencySelectorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  currencyCodeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    width: 45,
+  },
+  currencySymbolText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });

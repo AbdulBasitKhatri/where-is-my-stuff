@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "VaultTrack",
-    "slug": "vaulttrack",
+    "name": "My Stuff",
+    "slug": "My Stuff",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "vaulttrack",
+    "scheme": "my-stuff",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
