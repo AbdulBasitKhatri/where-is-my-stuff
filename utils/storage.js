@@ -107,6 +107,20 @@ const storage = {
       throw err;
     }
   },
+  async updateRepair(itemId, repairId, updatedFields) {
+    try {
+      const key = `@repairs_${itemId}`;
+      const raw = await AsyncStorage.getItem(key);
+      let list = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex((r) => r.id === repairId);
+      if (idx === -1) return;
+      list[idx] = { ...list[idx], ...updatedFields };
+      await AsyncStorage.setItem(key, JSON.stringify(list));
+    } catch (err) {
+      console.error('updateRepair error', err);
+      throw err;
+    }
+  },
 };
 
 export default storage;

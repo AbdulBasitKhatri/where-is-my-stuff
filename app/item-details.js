@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, Animated } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import storage from '../utils/storage';
 import { useTheme } from '../context/ThemeContext';
 
@@ -24,6 +25,21 @@ export default function ItemDetailsScreen() {
   }, [id]);
 
   const { colors, defaultCurrency } = useTheme();
+  const router = useRouter();
+
+  const [parentItem, setParentItem] = useState(null);
+  const [editItemModalVisible, setEditItemModalVisible] = useState(false);
+  const [editItemForm, setEditItemForm] = useState({ name: '', location: '', purchasePrice: '', currency: defaultCurrency?.code || 'USD', currencySymbol: defaultCurrency?.symbol || '$', warrantyUntil: '', notes: '' });
+
+  const [editingRepair, setEditingRepair] = useState(null);
+  const [repairEditModalVisible, setRepairEditModalVisible] = useState(false);
+  const [editRepairForm, setEditRepairForm] = useState({ date: '', cost: '', provider: '', description: '', currency: defaultCurrency?.code || 'USD', currencySymbol: defaultCurrency?.symbol || '$' });
+
+  const modalAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const anyOpen = repairCurrencyModalVisible || repairEditModalVisible || editItemModalVisible;
+    Animated.timing(modalAnim, { toValue: anyOpen ? 1 : 0, duration: 240, useNativeDriver: true }).start();
+  }, [repairCurrencyModalVisible, repairEditModalVisible, editItemModalVisible]);
 
   const saveRepair = async () => {
     if (!form.date || !form.provider) {
@@ -42,6 +58,92 @@ export default function ItemDetailsScreen() {
     }
   };
 
+  // Item edit/delete handlers
+  const openEditItem = () => {
+    setEditItemModalVisible(true);
+  };
+
+  const saveItemEdits = async () => {
+    if (!parentItem) return;
+    try {
+      await storage.updateItem(parentItem.id, {
+        name: editItemForm.name,
+        location: editItemForm.location,
+        purchasePrice: editItemForm.purchasePrice,
+        currency: editItemForm.currency,
+        currencySymbol: editItemForm.currencySymbol,
+        warrantyUntil: editItemForm.warrantyUntil,
+        notes: editItemForm.notes,
+      });
+      setEditItemModalVisible(false);
+      // refresh parent item
+      const items = await storage.getItems();
+      const it = (items || []).find((i) => String(i.id) === String(id));
+      setParentItem(it);
+    } catch (e) {
+      Alert.alert('Error', 'Failed to update item.');
+    }
+  };
+
+  const deleteItemConfirmed = () => {
+    Alert.alert('Delete Item', 'Are you sure you want to delete this item and its repairs?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          await storage.deleteItem(id);
+          // also remove repairs key
+          await AsyncStorage.removeItem(`@repairs_${id}`);
+        } catch (e) {
+          // ignore
+        } finally {
+          router.back();
+        }
+      } }
+    ]);
+  };
+
+  // Repair edit/delete handlers
+  const openEditRepair = (repair) => {
+    setEditingRepair(repair);
+    setEditRepairForm({ date: repair.date || '', cost: String(repair.cost || ''), provider: repair.provider || '', description: repair.description || '', currency: repair.currency || repairCurrency, currencySymbol: repair.currencySymbol || repairCurrencySymbol });
+    setRepairEditModalVisible(true);
+  };
+
+  const saveEditedRepair = async () => {
+    if (!editingRepair) return;
+    try {
+      await storage.updateRepair(id, editingRepair.id, {
+        date: editRepairForm.date,
+        cost: parseFloat(editRepairForm.cost) || 0,
+        provider: editRepairForm.provider,
+        description: editRepairForm.description,
+        currency: editRepairForm.currency,
+        currencySymbol: editRepairForm.currencySymbol,
+      });
+      const list = await storage.getRepairs(id);
+      setRepairs(list || []);
+      setRepairEditModalVisible(false);
+      setEditingRepair(null);
+    } catch (e) {
+      Alert.alert('Error', 'Failed to update repair.');
+    }
+  };
+
+  const deleteRepairConfirmed = (repairId) => {
+    Alert.alert('Delete Repair', 'Delete this repair entry?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          await storage.deleteRepair(id, repairId);
+          const list = await storage.getRepairs(id);
+          setRepairs(list || []);
+        } catch (e) {
+          Alert.alert('Error', 'Failed to delete repair.');
+        }
+      } }
+    ]);
+  };
+
   const renderItem = ({ item }) => (
     <View style={[styles.repairCard, { backgroundColor: colors.card }]}> 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -50,6 +152,14 @@ export default function ItemDetailsScreen() {
       </View>
       <Text style={[styles.repairDesc, { color: colors.textMuted }]}>{item.description}</Text>
       <Text style={[styles.repairDate, { color: colors.textMuted }]}>{item.date}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+        <TouchableOpacity onPress={() => openEditRepair(item)}>
+          <Text style={{ color: colors.primary }}>Edit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => deleteRepairConfirmed(item.id)}>
+          <Text style={{ color: colors.danger }}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
  
@@ -69,14 +179,25 @@ export default function ItemDetailsScreen() {
   const [repairCurrencyModalVisible, setRepairCurrencyModalVisible] = useState(false);
   const [repairCurrency, setRepairCurrency] = useState(defaultCurrency?.code || 'USD');
   const [repairCurrencySymbol, setRepairCurrencySymbol] = useState(defaultCurrency?.symbol || '$');
+  const [repairCurrencyModalTarget, setRepairCurrencyModalTarget] = useState('form');
   const [parentCurrencyLoaded, setParentCurrencyLoaded] = useState(false);
   const [parentItemCurrency, setParentItemCurrency] = useState(null);
   const ListHeader = () => (
     <>
       <View style={[styles.headerBox, { backgroundColor: colors.card }]}> 
-        <Text style={[styles.title, { color: colors.text }]}>{name}</Text>
-        <Text style={[styles.location, { color: colors.textMuted }]}>Location: Office &gt; Desk</Text>
-        <Text style={[styles.warranty, { color: colors.text }]}>{'Warranty Expires: N/A'}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.title, { color: colors.text }]}>{parentItem?.name || name}</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity onPress={openEditItem} style={{ marginRight: 8 }}>
+              <Text style={{ color: colors.primary, fontWeight: '700' }}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={deleteItemConfirmed}>
+              <Text style={{ color: colors.danger, fontWeight: '700' }}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <Text style={[styles.location, { color: colors.textMuted }]}>{`Location: ${parentItem?.location || 'Office > Desk'}`}</Text>
+        <Text style={[styles.warranty, { color: colors.text }]}>{`Warranty Expires: ${parentItem?.warrantyUntil || 'N/A'}`}</Text>
       </View>
       <Text style={[styles.sectionHeader, { color: colors.text }]}>Maintenance & Repair Logs</Text>
     </>
@@ -92,6 +213,16 @@ export default function ItemDetailsScreen() {
           setRepairCurrency(it.currency || defaultCurrency?.code);
           setRepairCurrencySymbol(it.currencySymbol || defaultCurrency?.symbol);
           setParentItemCurrency(it.currency);
+          setParentItem(it);
+          setEditItemForm({
+            name: it.name || '',
+            location: it.location || '',
+            purchasePrice: it.purchasePrice || '',
+            currency: it.currency || defaultCurrency?.code,
+            currencySymbol: it.currencySymbol || defaultCurrency?.symbol,
+            warrantyUntil: it.warrantyUntil || '',
+            notes: it.notes || '',
+          });
         }
       } catch (e) {
         // ignore
@@ -124,7 +255,7 @@ export default function ItemDetailsScreen() {
               <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                 <TouchableOpacity
                   style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => setRepairCurrencyModalVisible(true)}
+                  onPress={() => { setRepairCurrencyModalTarget('form'); setRepairCurrencyModalVisible(true); }}
                 >
                   <Text style={[styles.currencyCodeText, { color: colors.text }]}>{repairCurrency}</Text>
                   <Text style={[styles.currencySymbolText, { color: colors.text }]}>{repairCurrencySymbol}</Text>
@@ -207,7 +338,7 @@ export default function ItemDetailsScreen() {
               activeOpacity={1}
               onPress={() => setRepairCurrencyModalVisible(false)}
             >
-              <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%', padding: 20 }} onStartShouldSetResponder={() => true}>
+              <Animated.View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%', padding: 20, borderTopWidth: 2, borderTopColor: colors.border, transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Select Currency</Text>
                   <TouchableOpacity onPress={() => setRepairCurrencyModalVisible(false)}>
@@ -222,10 +353,17 @@ export default function ItemDetailsScreen() {
                     <TouchableOpacity
                       style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8 }}
                       onPress={() => {
-                        setRepairCurrency(item.code);
-                        setRepairCurrencySymbol(item.symbol);
-                        setRepairCurrencyModalVisible(false);
-                      }}
+                            if (repairCurrencyModalTarget === 'editRepair') {
+                              setEditRepairForm((s) => ({ ...s, currency: item.code, currencySymbol: item.symbol }));
+                            } else if (repairCurrencyModalTarget === 'editItem') {
+                              setEditItemForm((s) => ({ ...s, currency: item.code, currencySymbol: item.symbol }));
+                            } else {
+                              setRepairCurrency(item.code);
+                              setRepairCurrencySymbol(item.symbol);
+                            }
+                            setRepairCurrencyModalVisible(false);
+                            setRepairCurrencyModalTarget('form');
+                          }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text, width: 45 }}>{item.code}</Text>
@@ -235,7 +373,74 @@ export default function ItemDetailsScreen() {
                     </TouchableOpacity>
                   )}
                 />
-              </View>
+              </Animated.View>
+            </TouchableOpacity>
+          </Modal>
+
+          {/* Edit Item Modal */}
+          <Modal visible={editItemModalVisible} animationType="slide" transparent onRequestClose={() => setEditItemModalVisible(false)}>
+            <TouchableOpacity style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.modalOverlay }} activeOpacity={1} onPress={() => setEditItemModalVisible(false)}>
+              <Animated.View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', padding: 20, borderTopWidth: 2, borderTopColor: colors.border, transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Edit Item</Text>
+                  <TouchableOpacity onPress={() => setEditItemModalVisible(false)}>
+                    <Text style={{ color: colors.textMuted }}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.label, { color: colors.text }]}>Name</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editItemForm.name} onChangeText={(t) => setEditItemForm((s) => ({ ...s, name: t }))} />
+                <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editItemForm.location} onChangeText={(t) => setEditItemForm((s) => ({ ...s, location: t }))} />
+                <Text style={[styles.label, { color: colors.text }]}>Purchase Price</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editItemForm.purchasePrice} onChangeText={(t) => setEditItemForm((s) => ({ ...s, purchasePrice: t }))} keyboardType="numeric" />
+                <Text style={[styles.label, { color: colors.text }]}>Currency</Text>
+                <TouchableOpacity style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border, alignSelf: 'flex-start' }]} onPress={() => { setRepairCurrencyModalTarget('editItem'); setRepairCurrencyModalVisible(true); }}>
+                  <Text style={[styles.currencyCodeText, { color: colors.text }]}>{editItemForm.currency}</Text>
+                  <Text style={[styles.currencySymbolText, { color: colors.text }]}>{editItemForm.currencySymbol}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8, borderColor: colors.primary }]} onPress={saveItemEdits}>
+                  <Text style={[styles.addRepairText, { color: colors.primary }]}>Save</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </TouchableOpacity>
+          </Modal>
+
+          {/* Edit Repair Modal */}
+          <Modal visible={repairEditModalVisible} animationType="slide" transparent onRequestClose={() => setRepairEditModalVisible(false)}>
+            <TouchableOpacity style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.modalOverlay }} activeOpacity={1} onPress={() => setRepairEditModalVisible(false)}>
+              <Animated.View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', padding: 20, borderTopWidth: 2, borderTopColor: colors.border, transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Edit Repair</Text>
+                  <TouchableOpacity onPress={() => setRepairEditModalVisible(false)}>
+                    <Text style={{ color: colors.textMuted }}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.provider} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, provider: t }))} />
+                <Text style={[styles.label, { color: colors.text, marginTop: 8 }]}>Currency</Text>
+                <TouchableOpacity style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border, alignSelf: 'flex-start' }]} onPress={() => { setRepairCurrencyModalTarget('editRepair'); setRepairCurrencyModalVisible(true); }}>
+                  <Text style={[styles.currencyCodeText, { color: colors.text }]}>{editRepairForm.currency}</Text>
+                  <Text style={[styles.currencySymbolText, { color: colors.text }]}>{editRepairForm.currencySymbol}</Text>
+                </TouchableOpacity>
+                <Text style={[styles.label, { color: colors.text }]}>Date</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.date} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, date: t }))} />
+                <Text style={[styles.label, { color: colors.text }]}>Cost</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.cost} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, cost: t }))} keyboardType="numeric" />
+                <Text style={[styles.label, { color: colors.text }]}>Description</Text>
+                <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.description} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, description: t }))} multiline />
+
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                  <TouchableOpacity style={[styles.addRepairBtn, { flex: 1, borderColor: colors.primary }]} onPress={saveEditedRepair}>
+                    <Text style={[styles.addRepairText, { color: colors.primary }]}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.addRepairBtn, { flex: 1, borderWidth: 0, backgroundColor: colors.card }]} onPress={() => { if (editingRepair) deleteRepairConfirmed(editingRepair.id); }}>
+                    <Text style={{ color: colors.danger }}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
             </TouchableOpacity>
           </Modal>
         </View>
