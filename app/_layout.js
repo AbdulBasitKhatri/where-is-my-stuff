@@ -6,16 +6,16 @@ export default function RootLayout() {
   return (
     <>
       <SafeAreaProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: '#121214' },
-          headerTintColor: '#FFFFFF',
+          headerStyle: { backgroundColor: '#FFFFFF' },
+          headerTintColor: '#111827',
           headerTitleStyle: { fontWeight: 'bold' },
-          contentStyle: { backgroundColor: '#121214' },
+          contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'VaultTrack' }} />
+        <Stack.Screen name="index" options={{ title: 'My Stuff' }} />
         <Stack.Screen name="add-item" options={{ title: 'Add New Item', presentation: 'modal' }} />
         <Stack.Screen name="item-details" options={{ title: 'Item Overview' }} />
       </Stack>

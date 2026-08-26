@@ -1,99 +1,100 @@
 import * as SQLite from 'expo-sqlite';
 
-let db = null;
+const DB_NAME = 'inventory.db';
 
-function getDb() {
-  if (db) return db;
-  if (!SQLite || typeof SQLite.openDatabase !== 'function') {
-    throw new Error('expo-sqlite native module is not available in this runtime.');
-  }
-  db = SQLite.openDatabase('vaulttrack.db');
-  return db;
-}
-
-function execSql(sql, args = []) {
-  return new Promise((resolve, reject) => {
-    try {
-      const database = getDb();
-      database.transaction((tx) => {
-        tx.executeSql(
-          sql,
-          args,
-          (_, result) => resolve(result),
-          (_, err) => {
-            reject(err);
-            return false;
-          }
-        );
-      });
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-export async function initDB() {
-  await execSql(
-    `CREATE TABLE IF NOT EXISTS items (
-      id TEXT PRIMARY KEY,
-      name TEXT,
+// Initialize and open the database
+async function getDBConnection() {
+  const db = await SQLite.openDatabaseAsync(DB_NAME);
+  
+  // Ensure table exists
+  await db.execAsync(`
+    PRAGMA journal_mode = WAL;
+    CREATE TABLE IF NOT EXISTS items (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
       location TEXT,
       purchasePrice TEXT,
       warrantyUntil TEXT,
       notes TEXT,
-      repairsCount INTEGER
-    );`
-  );
-
-  await execSql(
-    `CREATE TABLE IF NOT EXISTS repairs (
-      id TEXT PRIMARY KEY,
-      itemId TEXT,
-      date TEXT,
-      cost REAL,
-      provider TEXT,
-      description TEXT
-    );`
-  );
+      repairsCount INTEGER DEFAULT 0
+    );
+  `);
+  
+  return db;
 }
 
-export async function getItems() {
-  await initDB();
-  const res = await execSql('SELECT * FROM items ORDER BY rowid DESC');
-  return res.rows._array;
-}
+const storage = {
+  /**
+   * Save a single new item (matches AddItemScreen call).
+   */
+  async saveItem(item) {
+    try {
+      const db = await getDBConnection();
+      await db.runAsync(
+        `INSERT INTO items (id, name, location, purchasePrice, warrantyUntil, notes, repairsCount)
+         VALUES (?, ?, ?, ?, ?, ?, ?);`,
+        [
+          item.id,
+          item.name,
+          item.location || 'Unknown',
+          item.purchasePrice || '',
+          item.warrantyUntil || 'N/A',
+          item.notes || '',
+          item.repairsCount || 0,
+        ]
+      );
+      return item;
+    } catch (error) {
+      console.error('SQLite Save Error:', error);
+      throw error;
+    }
+  },
 
-export async function saveItem(item) {
-  await initDB();
-  const q = `INSERT OR REPLACE INTO items (id, name, location, purchasePrice, warrantyUntil, notes, repairsCount) VALUES (?, ?, ?, ?, ?, ?, ?);`;
-  await execSql(q, [item.id, item.name, item.location, item.purchasePrice, item.warrantyUntil, item.notes, item.repairsCount || 0]);
-}
+  /**
+   * Retrieve all items.
+   */
+  async getItems() {
+    try {
+      const db = await getDBConnection();
+      const allRows = await db.getAllAsync('SELECT * FROM items ORDER BY id DESC;');
+      return allRows;
+    } catch (error) {
+      console.error('SQLite Fetch Error:', error);
+      throw error;
+    }
+  },
 
-export async function getRepairs(itemId) {
-  await initDB();
-  const res = await execSql('SELECT * FROM repairs WHERE itemId = ? ORDER BY rowid DESC', [itemId]);
-  return res.rows._array;
-}
+  /**
+   * Update an existing item by ID.
+   */
+  async updateItem(id, updatedFields) {
+    try {
+      const db = await getDBConnection();
+      const fields = Object.keys(updatedFields);
+      if (fields.length === 0) return;
 
-export async function saveRepair(itemId, repair) {
-  await initDB();
-  const q = `INSERT OR REPLACE INTO repairs (id, itemId, date, cost, provider, description) VALUES (?, ?, ?, ?, ?, ?);`;
-  await execSql(q, [repair.id, itemId, repair.date, repair.cost || 0, repair.provider, repair.description]);
-  // update repairs count
-  await execSql('UPDATE items SET repairsCount = COALESCE(repairsCount, 0) + 1 WHERE id = ?;', [itemId]);
-}
+      const setClause = fields.map((field) => `${field} = ?`).join(', ');
+      const values = [...Object.values(updatedFields), id];
 
-export async function getItemById(id) {
-  await initDB();
-  const res = await execSql('SELECT * FROM items WHERE id = ? LIMIT 1', [id]);
-  return res.rows._array[0] || null;
-}
+      await db.runAsync(`UPDATE items SET ${setClause} WHERE id = ?;`, values);
+    } catch (error) {
+      console.error('SQLite Update Error:', error);
+      throw error;
+    }
+  },
 
-export default {
-  initDB,
-  getItems,
-  saveItem,
-  getRepairs,
-  saveRepair,
-  getItemById,
+  /**
+   * Delete an item by ID.
+   */
+  async deleteItem(id) {
+    try {
+      const db = await getDBConnection();
+      await db.runAsync('DELETE FROM items WHERE id = ?;', [id]);
+    } catch (error) {
+      console.error('SQLite Delete Error:', error);
+      throw error;
+    }
+  },
 };
+
+export default storage;

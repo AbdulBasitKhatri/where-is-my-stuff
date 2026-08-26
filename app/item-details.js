@@ -66,13 +66,13 @@ export default function ItemDetailsScreen() {
       {showForm ? (
         <View style={{ marginTop: 12 }}>
           <Text style={styles.label}>Date</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#71717A" value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} />
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#71717A" value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} blurOnSubmit={false} />
           <Text style={styles.label}>Provider</Text>
-          <TextInput style={styles.input} placeholder="e.g. Apple Store" placeholderTextColor="#71717A" value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} />
+          <TextInput style={styles.input} placeholder="e.g. Apple Store" placeholderTextColor="#71717A" value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} blurOnSubmit={false} />
           <Text style={styles.label}>Cost ($)</Text>
-          <TextInput style={styles.input} placeholder="e.g. 120.00" placeholderTextColor="#71717A" keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} />
+          <TextInput style={styles.input} placeholder="e.g. 120.00" placeholderTextColor="#71717A" keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} blurOnSubmit={false} />
           <Text style={styles.label}>Description</Text>
-          <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="What was done" placeholderTextColor="#71717A" multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} />
+          <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="What was done" placeholderTextColor="#71717A" multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} blurOnSubmit={false} />
           <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8 }]} onPress={saveRepair}>
             <Text style={styles.addRepairText}>Save Repair</Text>
           </TouchableOpacity>
@@ -97,8 +97,9 @@ export default function ItemDetailsScreen() {
           renderItem={renderItem}
           ListHeaderComponent={ListHeader}
           ListFooterComponent={ListFooter}
-          ListEmptyComponent={<Text style={{ color: '#A1A1AA', paddingTop: 8 }}>No repairs logged yet.</Text>}
+          ListEmptyComponent={<Text style={{ color: '#6B7280', paddingTop: 8 }}>No repairs logged yet.</Text>}
           contentContainerStyle={{ paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -106,14 +107,14 @@ export default function ItemDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#121214' },
-  label: { color: '#E4E4E7', fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: '#1E1E22', color: '#FFF', padding: 14, borderRadius: 8, fontSize: 16 },
-  headerBox: { backgroundColor: '#1E1E22', padding: 16, borderRadius: 12, marginBottom: 20 },
-  title: { color: '#FFF', fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
-  location: { color: '#A1A1AA', fontSize: 14, marginBottom: 4 },
-  warranty: { color: '#22C55E', fontSize: 14, fontWeight: '600' },
-  sectionHeader: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  container: { flex: 1, padding: 16, backgroundColor: '#FFFFFF' },
+  label: { color: '#111827', fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 12 },
+  input: { backgroundColor: '#F8FAFF', color: '#111827', padding: 14, borderRadius: 8, fontSize: 16 },
+  headerBox: { backgroundColor: '#F8FAFF', padding: 16, borderRadius: 12, marginBottom: 20 },
+  title: { color: '#111827', fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
+  location: { color: '#6B7280', fontSize: 14, marginBottom: 4 },
+  warranty: { color: '#059669', fontSize: 14, fontWeight: '600' },
+  sectionHeader: { color: '#111827', fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
   repairCard: { backgroundColor: '#27272A', padding: 12, borderRadius: 8, marginBottom: 8 },
   repairProvider: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   repairCost: { color: '#F43F5E', fontSize: 16, fontWeight: 'bold' },

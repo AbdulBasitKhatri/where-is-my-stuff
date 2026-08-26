@@ -43,9 +43,9 @@ export default function AddItemScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#121214' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={styles.container}>
+        <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Text style={styles.label}>Item Name</Text>
       <TextInput
         style={styles.input}
@@ -53,6 +53,9 @@ export default function AddItemScreen() {
         placeholderTextColor="#71717A"
         value={form.name}
         onChangeText={(val) => setForm({ ...form, name: val })}
+        blurOnSubmit={false}
+        autoCorrect={false}
+        autoCapitalize="words"
       />
 
       <Text style={styles.label}>Location Path</Text>
@@ -62,6 +65,8 @@ export default function AddItemScreen() {
         placeholderTextColor="#71717A"
         value={form.location}
         onChangeText={(val) => setForm({ ...form, location: val })}
+        blurOnSubmit={false}
+        autoCorrect={false}
       />
 
       <Text style={styles.label}>Purchase Price ($)</Text>
@@ -72,6 +77,7 @@ export default function AddItemScreen() {
         placeholderTextColor="#71717A"
         value={form.purchasePrice}
         onChangeText={(val) => setForm({ ...form, purchasePrice: val })}
+        blurOnSubmit={false}
       />
 
       <Text style={styles.label}>Warranty End Date</Text>
@@ -81,6 +87,7 @@ export default function AddItemScreen() {
         placeholderTextColor="#71717A"
         value={form.warrantyUntil}
         onChangeText={(val) => setForm({ ...form, warrantyUntil: val })}
+        blurOnSubmit={false}
       />
 
       <Text style={styles.label}>Notes</Text>
@@ -91,6 +98,7 @@ export default function AddItemScreen() {
         value={form.notes}
         onChangeText={(val) => setForm({ ...form, notes: val })}
         multiline
+        blurOnSubmit={false}
       />
 
       <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
@@ -103,9 +111,9 @@ export default function AddItemScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  label: { color: '#E4E4E7', fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: '#1E1E22', color: '#FFF', padding: 14, borderRadius: 8, fontSize: 16 },
+  container: { flex: 1, padding: 16, backgroundColor: '#FFFFFF' },
+  label: { color: '#111827', fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 12 },
+  input: { backgroundColor: '#F8FAFF', color: '#111827', padding: 14, borderRadius: 8, fontSize: 16 },
   submitBtn: { backgroundColor: '#6366F1', padding: 16, borderRadius: 8, marginTop: 24, alignItems: 'center' },
   submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 });
