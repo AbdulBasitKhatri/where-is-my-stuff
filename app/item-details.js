@@ -264,25 +264,6 @@ export default function ItemDetailsScreen() {
         <View style={{ paddingTop: 12 }}>
           {showForm ? (
             <View>
-              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                <TouchableOpacity
-                  style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => { setRepairCurrencyModalTarget('form'); setRepairCurrencyModalVisible(true); }}
-                >
-                  <Text style={[styles.currencyCodeText, { color: colors.text }]}>{repairCurrency}</Text>
-                  <Text style={[styles.currencySymbolText, { color: colors.text }]}>{repairCurrencySymbol}</Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text }]}
-                  placeholder="e.g. 120.00"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="numeric"
-                  value={form.cost}
-                  onChangeText={(t) => setForm((s) => ({ ...s, cost: t }))}
-                  blurOnSubmit={false}
-                />
-              </View>
-
               <Text style={[styles.label, { color: colors.text }]}>Date</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.card, color: colors.text }]}
@@ -302,6 +283,25 @@ export default function ItemDetailsScreen() {
                 onChangeText={(t) => setForm((s) => ({ ...s, provider: t }))}
                 blurOnSubmit={false}
               />
+
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TouchableOpacity
+                  style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => { setRepairCurrencyModalTarget('form'); setRepairCurrencyModalVisible(true); }}
+                >
+                  <Text style={[styles.currencyCodeText, { color: colors.text }]}>{repairCurrency}</Text>
+                  <Text style={[styles.currencySymbolText, { color: colors.text }]}>{repairCurrencySymbol}</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text }]}
+                  placeholder="e.g. 120.00"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                  value={form.cost}
+                  onChangeText={(t) => setForm((s) => ({ ...s, cost: t }))}
+                  blurOnSubmit={false}
+                />
+              </View>
 
               <Text style={[styles.label, { color: colors.text }]}>Description</Text>
               <TextInput
@@ -404,12 +404,19 @@ export default function ItemDetailsScreen() {
                 <Text style={[styles.label, { color: colors.text }]}>Location</Text>
                 <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editItemForm.location} onChangeText={(t) => setEditItemForm((s) => ({ ...s, location: t }))} />
                 <Text style={[styles.label, { color: colors.text }]}>Purchase Price</Text>
-                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editItemForm.purchasePrice} onChangeText={(t) => setEditItemForm((s) => ({ ...s, purchasePrice: t }))} keyboardType="numeric" />
-                <Text style={[styles.label, { color: colors.text }]}>Currency</Text>
-                <TouchableOpacity style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border, alignSelf: 'flex-start' }]} onPress={() => { setRepairCurrencyModalTarget('editItem'); setRepairCurrencyModalVisible(true); }}>
-                  <Text style={[styles.currencyCodeText, { color: colors.text }]}>{editItemForm.currency}</Text>
-                  <Text style={[styles.currencySymbolText, { color: colors.text }]}>{editItemForm.currencySymbol}</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  <TouchableOpacity style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setRepairCurrencyModalTarget('editItem'); setRepairCurrencyModalVisible(true); }}>
+                    <Text style={[styles.currencyCodeText, { color: colors.text }]}>{editItemForm.currency}</Text>
+                    <Text style={[styles.currencySymbolText, { color: colors.text }]}>{editItemForm.currencySymbol}</Text>
+                  </TouchableOpacity>
+                  <TextInput style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text }]} value={editItemForm.purchasePrice} onChangeText={(t) => setEditItemForm((s) => ({ ...s, purchasePrice: t }))} keyboardType="numeric" />
+                </View>
+
+                <Text style={[styles.label, { color: colors.text }]}>Warranty End Date</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editItemForm.warrantyUntil} onChangeText={(t) => setEditItemForm((s) => ({ ...s, warrantyUntil: t }))} placeholder="YYYY-MM-DD" />
+
+                <Text style={[styles.label, { color: colors.text }]}>Notes</Text>
+                <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]} value={editItemForm.notes} onChangeText={(t) => setEditItemForm((s) => ({ ...s, notes: t }))} multiline />
 
                 <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8, borderColor: colors.primary }]} onPress={saveItemEdits}>
                   <Text style={[styles.addRepairText, { color: colors.primary }]}>Save</Text>
@@ -434,17 +441,20 @@ export default function ItemDetailsScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
-                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.provider} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, provider: t }))} />
-                <Text style={[styles.label, { color: colors.text, marginTop: 8 }]}>Currency</Text>
-                <TouchableOpacity style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border, alignSelf: 'flex-start' }]} onPress={() => { setRepairCurrencyModalTarget('editRepair'); setRepairCurrencyModalVisible(true); }}>
-                  <Text style={[styles.currencyCodeText, { color: colors.text }]}>{editRepairForm.currency}</Text>
-                  <Text style={[styles.currencySymbolText, { color: colors.text }]}>{editRepairForm.currencySymbol}</Text>
-                </TouchableOpacity>
                 <Text style={[styles.label, { color: colors.text }]}>Date</Text>
                 <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.date} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, date: t }))} />
-                <Text style={[styles.label, { color: colors.text }]}>Cost</Text>
-                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.cost} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, cost: t }))} keyboardType="numeric" />
+
+                <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.provider} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, provider: t }))} />
+
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                  <TouchableOpacity style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setRepairCurrencyModalTarget('editRepair'); setRepairCurrencyModalVisible(true); }}>
+                    <Text style={[styles.currencyCodeText, { color: colors.text }]}>{editRepairForm.currency}</Text>
+                    <Text style={[styles.currencySymbolText, { color: colors.text }]}>{editRepairForm.currencySymbol}</Text>
+                  </TouchableOpacity>
+                  <TextInput style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.cost} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, cost: t }))} keyboardType="numeric" />
+                </View>
+
                 <Text style={[styles.label, { color: colors.text }]}>Description</Text>
                 <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.description} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, description: t }))} multiline />
 
