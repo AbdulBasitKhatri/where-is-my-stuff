@@ -88,12 +88,25 @@ export default function DashboardScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
-      {/* App Header */}
+      {/* Top Branding & Profile Header Bar */}
       <View style={styles.topHeader}>
-        <View>
-          <Text style={styles.greetingText}>Vault Overview</Text>
-          <Text style={styles.title}>My Stuff</Text>
+        <View style={styles.brandRow}>
+          <View style={styles.logoBadge}>
+            <Feather name="box" size={20} color="#FFFFFF" />
+          </View>
+          <View>
+            <Text style={styles.greetingText}>Vault</Text>
+            <Text style={styles.title}>My Stuff</Text>
+          </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.profileAvatar}
+          activeOpacity={0.8}
+          onPress={() => router.push('/settings')}
+        >
+          <Feather name="settings" size={18} color="#0F172A" />
+        </TouchableOpacity>
       </View>
 
       {/* Main Content */}
@@ -253,24 +266,50 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, backgroundColor: '#FFFFFF' },
 
-  // Header
+  // Add/update these styles in index.js:
   topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
     marginTop: 8,
   },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   greetingText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  title: { fontSize: 28, fontWeight: '800', color: '#0F172A' },
+  title: { fontSize: 24, fontWeight: '800', color: '#0F172A' },
+  profileAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
   // Stats Bar (Monochromatic Dark Navy Accent)
   statsRow: {
     flexDirection: 'row',
-    justify: 'space-between',
+    justifyContent: 'space-between',
     gap: 8,
     marginBottom: 16,
   },
@@ -339,7 +378,7 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
-    justify: 'space-between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     gap: 8,
   },
@@ -374,7 +413,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    justify: 'center',
+    justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#0F172A',
