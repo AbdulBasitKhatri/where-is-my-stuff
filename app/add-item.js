@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -71,6 +72,22 @@ export default function AddItemScreen() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const modalAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(modalAnim, { toValue: modalVisible ? 1 : 0, duration: 220, useNativeDriver: true }).start();
+  }, [modalVisible]);
+
+  const [BlurViewComp, setBlurViewComp] = useState(null);
+  useEffect(() => {
+    try {
+      // dynamic require so app doesn't crash if expo-blur isn't installed
+      // eslint-disable-next-line global-require
+      const mod = require('expo-blur');
+      if (mod && mod.BlurView) setBlurViewComp(() => mod.BlurView);
+    } catch (e) {
+      setBlurViewComp(null);
+    }
+  }, []);
 
   const selectedCurrencyObj =
     POPULAR_CURRENCIES.find((c) => c.code === form.currency) || POPULAR_CURRENCIES[0];
@@ -236,16 +253,21 @@ export default function AddItemScreen() {
       {/* Currency Selection Modal */}
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="none"
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableOpacity
-          style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
           activeOpacity={1}
           onPress={() => setModalVisible(false)}
         >
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]} onStartShouldSetResponder={() => true}>
+          {BlurViewComp ? (
+            <BlurViewComp intensity={60} style={StyleSheet.absoluteFill} />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
+          )}
+          <Animated.View style={{ width: '92%', backgroundColor: colors.background, borderRadius: 14, maxHeight: '70%', padding: 18, borderWidth: 1, borderColor: colors.border, transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Select Currency</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -283,7 +305,7 @@ export default function AddItemScreen() {
                 );
               }}
             />
-          </View>
+          </Animated.View>
         </TouchableOpacity>
       </Modal>
     </View>

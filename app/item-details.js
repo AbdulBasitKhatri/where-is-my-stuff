@@ -41,6 +41,18 @@ export default function ItemDetailsScreen() {
     Animated.timing(modalAnim, { toValue: anyOpen ? 1 : 0, duration: 240, useNativeDriver: true }).start();
   }, [repairCurrencyModalVisible, repairEditModalVisible, editItemModalVisible]);
 
+  const [BlurViewComp, setBlurViewComp] = useState(null);
+  useEffect(() => {
+    try {
+      // dynamic require so app doesn't crash if expo-blur isn't installed
+      // eslint-disable-next-line global-require
+      const mod = require('expo-blur');
+      if (mod && mod.BlurView) setBlurViewComp(() => mod.BlurView);
+    } catch (e) {
+      setBlurViewComp(null);
+    }
+  }, []);
+
   const saveRepair = async () => {
     if (!form.date || !form.provider) {
       Alert.alert('Validation', 'Please provide date and provider.');
@@ -291,17 +303,6 @@ export default function ItemDetailsScreen() {
                 blurOnSubmit={false}
               />
 
-              <Text style={[styles.label, { color: colors.text }]}>Cost ({repairCurrency})</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.card, color: colors.text }]}
-                placeholder="e.g. 120.00"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="numeric"
-                value={form.cost}
-                onChangeText={(t) => setForm((s) => ({ ...s, cost: t }))}
-                blurOnSubmit={false}
-              />
-
               <Text style={[styles.label, { color: colors.text }]}>Description</Text>
               <TextInput
                 style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]}
@@ -321,24 +322,29 @@ export default function ItemDetailsScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity style={styles.addRepairBtn} onPress={() => setShowForm(true)}>
-              <Text style={styles.addRepairText}>+ Log New Repair</Text>
+            <TouchableOpacity style={[styles.addRepairBtn, { borderColor: colors.primary }]} onPress={() => setShowForm(true)}>
+              <Text style={[styles.addRepairText, { color: colors.primary }]}>+ Log New Repair</Text>
             </TouchableOpacity>
           )}
 
           {/* Repair Currency Picker Modal */}
           <Modal
             visible={repairCurrencyModalVisible}
-            animationType="slide"
+            animationType="none"
             transparent
             onRequestClose={() => setRepairCurrencyModalVisible(false)}
           >
             <TouchableOpacity
-              style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.modalOverlay }}
+              style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
               activeOpacity={1}
               onPress={() => setRepairCurrencyModalVisible(false)}
             >
-              <Animated.View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%', padding: 20, borderTopWidth: 2, borderTopColor: colors.border, transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
+              {BlurViewComp ? (
+                <BlurViewComp intensity={60} style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
+              )}
+              <Animated.View style={{ width: '92%', backgroundColor: colors.background, borderRadius: 14, maxHeight: '70%', padding: 18, borderWidth: 1, borderColor: colors.border, transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Select Currency</Text>
                   <TouchableOpacity onPress={() => setRepairCurrencyModalVisible(false)}>
@@ -378,9 +384,14 @@ export default function ItemDetailsScreen() {
           </Modal>
 
           {/* Edit Item Modal */}
-          <Modal visible={editItemModalVisible} animationType="slide" transparent onRequestClose={() => setEditItemModalVisible(false)}>
-            <TouchableOpacity style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.modalOverlay }} activeOpacity={1} onPress={() => setEditItemModalVisible(false)}>
-              <Animated.View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', padding: 20, borderTopWidth: 2, borderTopColor: colors.border, transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
+          <Modal visible={editItemModalVisible} animationType="none" transparent onRequestClose={() => setEditItemModalVisible(false)}>
+            <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setEditItemModalVisible(false)}>
+              {BlurViewComp ? (
+                <BlurViewComp intensity={60} style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
+              )}
+              <Animated.View style={{ width: '92%', backgroundColor: colors.background, borderRadius: 14, maxHeight: '80%', padding: 18, borderWidth: 1, borderColor: colors.border, transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Edit Item</Text>
                   <TouchableOpacity onPress={() => setEditItemModalVisible(false)}>
@@ -408,9 +419,14 @@ export default function ItemDetailsScreen() {
           </Modal>
 
           {/* Edit Repair Modal */}
-          <Modal visible={repairEditModalVisible} animationType="slide" transparent onRequestClose={() => setRepairEditModalVisible(false)}>
-            <TouchableOpacity style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.modalOverlay }} activeOpacity={1} onPress={() => setRepairEditModalVisible(false)}>
-              <Animated.View style={{ backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', padding: 20, borderTopWidth: 2, borderTopColor: colors.border, transform: [{ translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
+          <Modal visible={repairEditModalVisible} animationType="none" transparent onRequestClose={() => setRepairEditModalVisible(false)}>
+            <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setRepairEditModalVisible(false)}>
+              {BlurViewComp ? (
+                <BlurViewComp intensity={60} style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
+              )}
+              <Animated.View style={{ width: '92%', backgroundColor: colors.background, borderRadius: 14, maxHeight: '80%', padding: 18, borderWidth: 1, borderColor: colors.border, transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Edit Repair</Text>
                   <TouchableOpacity onPress={() => setRepairEditModalVisible(false)}>
@@ -435,9 +451,6 @@ export default function ItemDetailsScreen() {
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                   <TouchableOpacity style={[styles.addRepairBtn, { flex: 1, borderColor: colors.primary }]} onPress={saveEditedRepair}>
                     <Text style={[styles.addRepairText, { color: colors.primary }]}>Save</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.addRepairBtn, { flex: 1, borderWidth: 0, backgroundColor: colors.card }]} onPress={() => { if (editingRepair) deleteRepairConfirmed(editingRepair.id); }}>
-                    <Text style={{ color: colors.danger }}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </Animated.View>
