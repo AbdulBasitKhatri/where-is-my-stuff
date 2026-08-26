@@ -197,7 +197,7 @@ export default function AddItemScreen() {
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Feather name="dollar-sign" size={14} color={colors.textMuted} />
-              <Text style={styles.label}>Purchase Price</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Purchase Price</Text>
             </View>
 
             <View style={styles.priceRow}>
@@ -229,7 +229,7 @@ export default function AddItemScreen() {
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Feather name="shield" size={14} color={colors.textMuted} />
-              <Text style={styles.label}>Warranty End Date</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Warranty End Date</Text>
             </View>
             <TouchableOpacity
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, justifyContent: 'center' }]}
@@ -262,7 +262,7 @@ export default function AddItemScreen() {
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Feather name="file-text" size={14} color={colors.textMuted} />
-              <Text style={styles.label}>Notes</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Notes</Text>
             </View>
             <TextInput
               style={[styles.input, styles.textArea, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}

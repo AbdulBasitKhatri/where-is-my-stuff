@@ -74,7 +74,7 @@ export default function ItemDetailsScreen() {
     const yy = dateObj.getFullYear();
     const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
     const dd = String(dateObj.getDate()).padStart(2, '0');
-    
+
     return `${yy}-${mm}-${dd}`;
   };
 
@@ -318,7 +318,7 @@ export default function ItemDetailsScreen() {
                 onChangeText={(t) => setForm((s) => ({ ...s, provider: t }))}
                 blurOnSubmit={false}
               />
-
+              <Text style={[styles.label, { color: colors.text }]}>Cost</Text>
               <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                 <TouchableOpacity
                   style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -523,7 +523,7 @@ export default function ItemDetailsScreen() {
 
                 <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
                 <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.provider} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, provider: t }))} />
-
+                <Text style={[styles.label, { color: colors.text }]}>Cost</Text>
                 <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 8 }}>
                   <TouchableOpacity style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { setRepairCurrencyModalTarget('editRepair'); setRepairCurrencyModalVisible(true); }}>
                     <Text style={[styles.currencyCodeText, { color: colors.text }]}>{editRepairForm.currency}</Text>
