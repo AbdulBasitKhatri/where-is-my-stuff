@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import storage from './storage';
 
@@ -38,57 +39,67 @@ export default function ItemDetailsScreen() {
     }
   };
 
+  const renderItem = ({ item }) => (
+    <View style={styles.repairCard}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Text style={styles.repairProvider}>{item.provider}</Text>
+        <Text style={styles.repairCost}>${(item.cost || 0).toFixed(2)}</Text>
+      </View>
+      <Text style={styles.repairDesc}>{item.description}</Text>
+      <Text style={styles.repairDate}>{item.date}</Text>
+    </View>
+  );
+
+  const ListHeader = () => (
+    <>
+      <View style={styles.headerBox}>
+        <Text style={styles.title}>{name}</Text>
+        <Text style={styles.location}>Location: Office &gt; Desk</Text>
+        <Text style={styles.warranty}>Warranty Expires: Nov 15, 2027</Text>
+      </View>
+      <Text style={styles.sectionHeader}>Maintenance & Repair Logs</Text>
+    </>
+  );
+
+  const ListFooter = () => (
+    <>
+      {showForm ? (
+        <View style={{ marginTop: 12 }}>
+          <Text style={styles.label}>Date</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#71717A" value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} />
+          <Text style={styles.label}>Provider</Text>
+          <TextInput style={styles.input} placeholder="e.g. Apple Store" placeholderTextColor="#71717A" value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} />
+          <Text style={styles.label}>Cost ($)</Text>
+          <TextInput style={styles.input} placeholder="e.g. 120.00" placeholderTextColor="#71717A" keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} />
+          <Text style={styles.label}>Description</Text>
+          <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="What was done" placeholderTextColor="#71717A" multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} />
+          <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8 }]} onPress={saveRepair}>
+            <Text style={styles.addRepairText}>Save Repair</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: '#27272A', marginTop: 8 }]} onPress={() => setShowForm(false)}>
+            <Text style={{ color: '#A1A1AA' }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.addRepairBtn} onPress={() => setShowForm(true)}>
+          <Text style={styles.addRepairText}>+ Log New Repair</Text>
+        </TouchableOpacity>
+      )}
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView>
-          <View style={styles.headerBox}>
-            <Text style={styles.title}>{name}</Text>
-            <Text style={styles.location}>Location: Office &gt; Desk</Text>
-            <Text style={styles.warranty}>Warranty Expires: Nov 15, 2027</Text>
-          </View>
-
-          <Text style={styles.sectionHeader}>Maintenance & Repair Logs</Text>
-
-          <FlatList
-            data={repairs}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.repairCard}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={styles.repairProvider}>{item.provider}</Text>
-                  <Text style={styles.repairCost}>${(item.cost || 0).toFixed(2)}</Text>
-                </View>
-                <Text style={styles.repairDesc}>{item.description}</Text>
-                <Text style={styles.repairDate}>{item.date}</Text>
-              </View>
-            )}
-            ListEmptyComponent={<Text style={{ color: '#A1A1AA' }}>No repairs logged yet.</Text>}
-          />
-
-          {showForm ? (
-            <View style={{ marginTop: 12 }}>
-              <Text style={styles.label}>Date</Text>
-              <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#71717A" value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} />
-              <Text style={styles.label}>Provider</Text>
-              <TextInput style={styles.input} placeholder="e.g. Apple Store" placeholderTextColor="#71717A" value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} />
-              <Text style={styles.label}>Cost ($)</Text>
-              <TextInput style={styles.input} placeholder="e.g. 120.00" placeholderTextColor="#71717A" keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} />
-              <Text style={styles.label}>Description</Text>
-              <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="What was done" placeholderTextColor="#71717A" multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} />
-              <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8 }]} onPress={saveRepair}>
-                <Text style={styles.addRepairText}>Save Repair</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: '#27272A', marginTop: 8 }]} onPress={() => setShowForm(false)}>
-                <Text style={{ color: '#A1A1AA' }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.addRepairBtn} onPress={() => setShowForm(true)}>
-              <Text style={styles.addRepairText}>+ Log New Repair</Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
+        <FlatList
+          data={repairs}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          ListHeaderComponent={ListHeader}
+          ListFooterComponent={ListFooter}
+          ListEmptyComponent={<Text style={{ color: '#A1A1AA', paddingTop: 8 }}>No repairs logged yet.</Text>}
+          contentContainerStyle={{ paddingBottom: 24 }}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
