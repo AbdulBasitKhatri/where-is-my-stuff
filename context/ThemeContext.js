@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -33,41 +33,58 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState('light'); // 'light' | 'dark' | 'system'
-  // haptics feature removed: persistent preference no longer stored
+  
+  // 1. Default initial state to 'system' instead of 'light'
+  const [themeMode, setThemeMode] = useState('system'); 
   const [defaultCurrency, setDefaultCurrency] = useState({ code: 'USD', symbol: '$' });
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const savedTheme = await AsyncStorage.getItem(THEME_KEY);
-        if (savedTheme) setThemeMode(savedTheme);
+        if (savedTheme) {
+          setThemeMode(savedTheme);
+        }
 
         const savedCurrency = await AsyncStorage.getItem(DEFAULT_CURRENCY_KEY);
-        if (savedCurrency) setDefaultCurrency(JSON.parse(savedCurrency));
+        if (savedCurrency) {
+          setDefaultCurrency(JSON.parse(savedCurrency));
+        }
       } catch (e) {
         console.error('Failed to load settings context', e);
+      } finally {
+        setIsReady(true);
       }
     })();
   }, []);
 
-  const activeMode = themeMode === 'system' ? systemColorScheme || 'light' : themeMode;
-  const colors = activeMode === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+  // 2. Compute active mode dynamically whenever themeMode or systemColorScheme updates
+  const activeMode = useMemo(() => {
+    if (themeMode === 'system') {
+      return systemColorScheme || 'light';
+    }
+    return themeMode;
+  }, [themeMode, systemColorScheme]);
 
+  const colors = activeMode === 'dark' ? DARK_COLORS : LIGHT_COLORS;
   const isDark = activeMode === 'dark';
-  const theme = colors; // backward-friendly alias expected by some screens
+  const theme = colors;
 
   const updateThemeMode = async (mode) => {
     setThemeMode(mode);
     await AsyncStorage.setItem(THEME_KEY, mode);
   };
 
-  // haptics preference removed
-
   const updateDefaultCurrency = async (currencyObj) => {
     setDefaultCurrency(currencyObj);
     await AsyncStorage.setItem(DEFAULT_CURRENCY_KEY, JSON.stringify(currencyObj));
   };
+
+  // Prevent UI flash before stored preferences finish loading
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <ThemeContext.Provider
