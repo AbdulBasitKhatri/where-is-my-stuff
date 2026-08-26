@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "My Stuff",
-    "slug": "My Stuff",
+    "name": "Where is My Stuff",
+    "slug": "Where is My Stuff",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "my-stuff",
+    "scheme": "where-is-my-stuff",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true

@@ -137,7 +137,7 @@ export default function DashboardScreen() {
           </View>
           <View>
             <Text style={[styles.greetingText, { color: colors.textSecondary }]}>Vault</Text>
-            <Text style={[styles.title, { color: colors.text }]}>My Stuff</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Where is My Stuff</Text>
           </View>
         </View>
 
