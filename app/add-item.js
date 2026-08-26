@@ -101,9 +101,14 @@ export default function AddItemScreen() {
 
   const formatDate = (d) => {
     if (!d) return '';
-    const yy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const dateObj = d instanceof Date ? d : new Date(d);
+    
+    // Check if dateObj is a valid Date
+    if (isNaN(dateObj.getTime())) return '';
+
+    const yy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
     return `${yy}-${mm}-${dd}`;
   };
 
@@ -233,17 +238,24 @@ export default function AddItemScreen() {
               <Text style={{ color: form.warrantyUntil ? colors.text : colors.textMuted }}>{form.warrantyUntil || 'YYYY-MM-DD'}</Text>
             </TouchableOpacity>
             {showWarrantyPicker && DateTimePickerRef.current ? (
-              <DateTimePickerRef.current
-                value={form.warrantyUntil ? new Date(form.warrantyUntil) : new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onValueChange={(selected) => {
-                  if (Platform.OS !== 'ios') setShowWarrantyPicker(false);
-                  if (selected) setForm((s) => ({ ...s, warrantyUntil: formatDate(selected) }));
-                }}
-                onDismiss={() => setShowWarrantyPicker(false)}
-              />
-            ) : null}
+            <DateTimePickerRef.current
+              value={
+                form.warrantyUntil && !isNaN(new Date(form.warrantyUntil).getTime())
+                  ? new Date(form.warrantyUntil)
+                  : new Date()
+              }
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onValueChange={(event, selectedDate) => {
+                if (Platform.OS !== 'ios') {
+                  setShowWarrantyPicker(false);
+                }
+                if (event.type !== 'dismissed' && selectedDate) {
+                  setForm((s) => ({ ...s, warrantyUntil: formatDate(selectedDate) }));
+                }
+              }}
+            />
+          ) : null}
           </View>
 
           {/* Notes Input */}

@@ -66,9 +66,15 @@ export default function ItemDetailsScreen() {
 
   const formatDate = (d) => {
     if (!d) return '';
-    const yy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const dateObj = d instanceof Date ? d : new Date(d);
+
+    // Check if dateObj is a valid Date
+    if (isNaN(dateObj.getTime())) return '';
+
+    const yy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    
     return `${yy}-${mm}-${dd}`;
   };
 
@@ -292,11 +298,14 @@ export default function ItemDetailsScreen() {
                   value={form.date ? new Date(form.date) : new Date()}
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onValueChange={(selected) => {
-                    if (Platform.OS !== 'ios') setShowRepairDatePicker(false);
-                    if (selected) setForm((s) => ({ ...s, date: formatDate(selected) }));
+                  onValueChange={(event, selectedDate) => {
+                    if (Platform.OS !== 'ios') {
+                      setShowRepairDatePicker(false);
+                    }
+                    if (event.type !== 'dismissed' && selectedDate) {
+                      setForm((s) => ({ ...s, date: formatDate(selectedDate) }));
+                    }
                   }}
-                  onDismiss={() => setShowRepairDatePicker(false)}
                 />
               ) : null}
 
@@ -443,17 +452,24 @@ export default function ItemDetailsScreen() {
                   <Text style={{ color: editItemForm.warrantyUntil ? colors.text : colors.textMuted }}>{editItemForm.warrantyUntil || 'YYYY-MM-DD'}</Text>
                 </TouchableOpacity>
                 {showItemWarrantyPicker && DateTimePickerRef.current ? (
-                  <DateTimePickerRef.current
-                    value={editItemForm.warrantyUntil ? new Date(editItemForm.warrantyUntil) : new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onValueChange={(selected) => {
-                      if (Platform.OS !== 'ios') setShowItemWarrantyPicker(false);
-                      if (selected) setEditItemForm((s) => ({ ...s, warrantyUntil: formatDate(selected) }));
-                    }}
-                    onDismiss={() => setShowItemWarrantyPicker(false)}
-                  />
-                ) : null}
+                <DateTimePickerRef.current
+                  value={
+                    editItemForm.warrantyUntil && !isNaN(new Date(editItemForm.warrantyUntil).getTime())
+                      ? new Date(editItemForm.warrantyUntil)
+                      : new Date()
+                  }
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onValueChange={(event, selectedDate) => {
+                    if (Platform.OS !== 'ios') {
+                      setShowItemWarrantyPicker(false);
+                    }
+                    if (event.type !== 'dismissed' && selectedDate) {
+                      setEditItemForm((s) => ({ ...s, warrantyUntil: formatDate(selectedDate) }));
+                    }
+                  }}
+                />
+              ) : null}
 
                 <Text style={[styles.label, { color: colors.text }]}>Notes</Text>
                 <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]} value={editItemForm.notes} onChangeText={(t) => setEditItemForm((s) => ({ ...s, notes: t }))} multiline />
@@ -486,17 +502,24 @@ export default function ItemDetailsScreen() {
                   <Text style={{ color: editRepairForm.date ? colors.text : colors.textMuted }}>{editRepairForm.date || 'YYYY-MM-DD'}</Text>
                 </TouchableOpacity>
                 {showRepairDatePicker && DateTimePickerRef.current ? (
-                  <DateTimePickerRef.current
-                    value={editRepairForm.date ? new Date(editRepairForm.date) : new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onValueChange={(selected) => {
-                      if (Platform.OS !== 'ios') setShowRepairDatePicker(false);
-                      if (selected) setEditRepairForm((s) => ({ ...s, date: formatDate(selected) }));
-                    }}
-                    onDismiss={() => setShowRepairDatePicker(false)}
-                  />
-                ) : null}
+                <DateTimePickerRef.current
+                  value={
+                    editRepairForm.date && !isNaN(new Date(editRepairForm.date).getTime())
+                      ? new Date(editRepairForm.date)
+                      : new Date()
+                  }
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onValueChange={(event, selectedDate) => {
+                    if (Platform.OS !== 'ios') {
+                      setShowRepairDatePicker(false);
+                    }
+                    if (event.type !== 'dismissed' && selectedDate) {
+                      setEditRepairForm((s) => ({ ...s, date: formatDate(selectedDate) }));
+                    }
+                  }}
+                />
+              ) : null}
 
                 <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
                 <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.provider} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, provider: t }))} />
