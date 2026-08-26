@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   ScrollView,
   Modal,
@@ -57,9 +58,55 @@ export default function SettingsScreen() {
   } = useTheme();
 
   const FAQ_ITEMS = [
-    { q: 'Why can\'t I feel haptics?', a: 'Haptics were removed from this build for broader compatibility.' },
-    { q: 'Where are items stored?', a: 'Items are stored locally using AsyncStorage on your device.' },
-    { q: 'How do I change default currency?', a: 'Open the Default Currency setting and choose a currency.' },
+    // Getting Started & Data Privacy
+    { 
+        q: 'Where is my data stored?', 
+        a: 'All your repair records, items, and custom preferences are stored securely directly on your phone. Nothing is sent to external servers or cloud accounts.' 
+    },
+    { 
+        q: 'Do I need an internet connection to use the app?', 
+        a: 'No. The app works 100% offline, allowing you to add, edit, and view all your items anytime without internet access.' 
+    },
+    { 
+        q: 'Will uninstalling the app delete my saved records?', 
+        a: 'Yes. Because your data is saved locally on your device, uninstalling the app or clearing device data will permanently remove your records.' 
+    },
+    { 
+        q: 'Is my financial and item information private?', 
+        a: 'Yes, completely private. Since all details remain strictly on your physical device, no one else has access to your records.' 
+    },
+
+    // Managing Repairs & Items
+    { 
+        q: 'How do I add a new repair record?', 
+        a: 'Tap the "+" button located on the main screen, fill in the item details, cost, and date, then tap save.' 
+    },
+    { 
+        q: 'How do I edit or update an existing repair?', 
+        a: 'Tap directly on any repair entry in your list to open its details, make your edits, and save the changes.' 
+    },
+    { 
+        q: 'Can I search my past repairs?', 
+        a: 'Yes! Use the search bar at the top of your list to quickly find repairs by item name.' 
+    },
+
+    // App Settings & Customization
+    { 
+        q: 'How do I change the default currency?', 
+        a: 'Go to Settings > Default Currency and tap on your preferred currency symbol from the list.' 
+    },
+    { 
+        q: 'How does the Theme setting work?', 
+        a: 'You can switch between Light, Dark, or System mode. System mode automatically matches your phone\'s dark/light setting.' 
+    },
+    { 
+        q: 'Why didn\'t the date picker save my selection?', 
+        a: 'If you tap outside the date selector or hit cancel, the date resets to its previous setting. Tap the date field again and press confirm after picking a date.' 
+    },
+    { 
+        q: 'Can I restore deleted items?', 
+        a: 'Currently, deleted entries are permanently removed to keep your app light and uncluttered. Make sure to double-check before deleting.' 
+    },
   ];
 
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
@@ -157,23 +204,25 @@ export default function SettingsScreen() {
 
         {/* SECTION: FEEDBACK & ACCESSIBILITY */}
         <Text style={[styles.sectionHeader, { color: colors.textMuted }]}> 
-          FEEDBACK & ACCESSIBILITY
+        FEEDBACK & ACCESSIBILITY
         </Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.rowItem}>
+        <TouchableOpacity 
+            style={styles.rowItem} 
+            onPress={() => setFaqModalVisible(true)}
+            activeOpacity={0.7}
+        >
             <View style={styles.rowLeft}>
-              <Feather name="info" size={18} color={colors.text} />
-              <View>
+            <Feather name="info" size={18} color={colors.text} />
+            <View>
                 <Text style={[styles.rowTitle, { color: colors.text }]}>FAQ & Help</Text>
                 <Text style={[styles.rowSubtitle, { color: colors.textMuted }]}>
-                  Common questions and troubleshooting
+                Common questions and troubleshooting
                 </Text>
-              </View>
             </View>
-            <TouchableOpacity onPress={() => setFaqModalVisible(true)}>
-              <Feather name="chevron-right" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -234,31 +283,57 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-
-
       {/* FAQ Modal */}
-      <Modal visible={faqModalVisible} animationType="slide" transparent onRequestClose={() => setFaqModalVisible(false)}>
-        <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]} activeOpacity={1} onPress={() => setFaqModalVisible(false)}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]} onStartShouldSetResponder={() => true}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}> 
-              <Text style={[styles.modalTitle, { color: colors.text }]}>FAQ & Help</Text>
-              <TouchableOpacity onPress={() => setFaqModalVisible(false)}>
-                <Feather name="x" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={FAQ_ITEMS}
-              keyExtractor={(i, idx) => String(idx)}
-              renderItem={({ item }) => (
-                <View style={{ paddingVertical: 12 }}>
-                  <Text style={{ fontWeight: '700', color: colors.text }}>{item.q}</Text>
-                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>{item.a}</Text>
-                </View>
-              )}
+        <Modal
+        visible={faqModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setFaqModalVisible(false)}
+        >
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
+            {/* Fullscreen Backdrop Button (Catches taps OUTSIDE the card only) */}
+            <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setFaqModalVisible(false)}
             />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+
+            {/* Modal Content Card */}
+            <View
+            style={[
+                styles.modalContent,
+                { backgroundColor: colors.background, width: '100%' }
+            ]}
+            >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>FAQ & Help</Text>
+                <TouchableOpacity onPress={() => setFaqModalVisible(false)}>
+                <Feather name="x" size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+            </View>
+
+            <FlatList
+                data={FAQ_ITEMS}
+                keyExtractor={(item, index) => String(index)}
+                showsVerticalScrollIndicator={true}
+                style={{ flexShrink: 1 }}
+                renderItem={({ item }) => (
+                <View 
+                    style={{ paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}
+                    pointerEvents="box-none"
+                >
+                    <Text style={{ fontWeight: '700', color: colors.text }} pointerEvents="none">
+                    {item.q}
+                    </Text>
+                    <Text style={{ color: colors.textMuted, marginTop: 6, lineHeight: 20 }} pointerEvents="none">
+                    {item.a}
+                    </Text>
+                </View>
+                )}
+            />
+            </View>
+        </View>
+        </Modal>
     </View>
   );
 }
