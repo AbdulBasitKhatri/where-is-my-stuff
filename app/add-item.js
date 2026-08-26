@@ -10,11 +10,47 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import storage from './storage';
+import storage from '../utils/storage';
+
+// 30 Major World Currencies
+const POPULAR_CURRENCIES = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  { code: 'PKR', name: 'Pakistani Rupee', symbol: 'Rs' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'AED' },
+  { code: 'SAR', name: 'Saudi Riyal', symbol: 'SAR' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
+  { code: 'MXN', name: 'Mexican Peso', symbol: 'MX$' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
+  { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+  { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+  { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+  { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
+  { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
+  { code: 'PLN', name: 'Polish Zloty', symbol: 'zł' },
+  { code: 'THB', name: 'Thai Baht', symbol: '฿' },
+  { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp' },
+  { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
+  { code: 'PHP', name: 'Philippine Peso', symbol: '₱' },
+  { code: 'EGP', name: 'Egyptian Pound', symbol: 'E£' },
+];
 
 export default function AddItemScreen() {
   const router = useRouter();
@@ -24,11 +60,17 @@ export default function AddItemScreen() {
     name: '',
     location: '',
     purchasePrice: '',
+    currency: 'USD',
+    currencySymbol: '$',
     warrantyUntil: '',
     notes: '',
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const selectedCurrencyObj =
+    POPULAR_CURRENCIES.find((c) => c.code === form.currency) || POPULAR_CURRENCIES[0];
 
   const handleSave = async () => {
     if (!form.name || !form.name.trim()) {
@@ -43,6 +85,8 @@ export default function AddItemScreen() {
       name: form.name.trim(),
       location: form.location.trim() || 'Unassigned',
       purchasePrice: form.purchasePrice.trim() || '',
+      currency: form.currency,
+      currencySymbol: form.currencySymbol,
       warrantyUntil: form.warrantyUntil.trim() || 'N/A',
       notes: form.notes.trim() || '',
       repairsCount: 0,
@@ -50,7 +94,6 @@ export default function AddItemScreen() {
 
     try {
       await storage.saveItem(newItem);
-      // Pops modal back to index and triggers focus refresh cleanly
       router.back();
     } catch (err) {
       console.error('Save error:', err);
@@ -107,20 +150,36 @@ export default function AddItemScreen() {
             />
           </View>
 
-          {/* Purchase Price Input */}
+          {/* Purchase Price & Currency Selector Row */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Feather name="dollar-sign" size={14} color="#64748B" />
-              <Text style={styles.label}>Purchase Price ($)</Text>
+              <Text style={styles.label}>Purchase Price</Text>
             </View>
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="e.g. 299.99"
-              placeholderTextColor="#94A3B8"
-              value={form.purchasePrice}
-              onChangeText={(val) => setForm({ ...form, purchasePrice: val })}
-            />
+
+            <View style={styles.priceRow}>
+              {/* Currency Dropdown Button */}
+              <TouchableOpacity
+                style={styles.currencySelectorBtn}
+                onPress={() => setModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.currencySelectorText}>
+                  {selectedCurrencyObj.code} ({selectedCurrencyObj.symbol})
+                </Text>
+                <Feather name="chevron-down" size={16} color="#64748B" />
+              </TouchableOpacity>
+
+              {/* Price Numeric Input */}
+              <TextInput
+                style={[styles.input, styles.priceInput]}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor="#94A3B8"
+                value={form.purchasePrice}
+                onChangeText={(val) => setForm({ ...form, purchasePrice: val })}
+              />
+            </View>
           </View>
 
           {/* Warranty End Date Input */}
@@ -170,6 +229,60 @@ export default function AddItemScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Currency Selection Modal */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Currency</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Feather name="x" size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={POPULAR_CURRENCIES}
+              keyExtractor={(item) => item.code}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const isSelected = item.code === form.currency;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.currencyItem,
+                      isSelected && styles.currencyItemSelected,
+                    ]}
+                    onPress={() => {
+                      setForm({
+                        ...form,
+                        currency: item.code,
+                        currencySymbol: item.symbol,
+                      });
+                      setModalVisible(false);
+                    }}
+                  >
+                    <View style={styles.currencyItemLeft}>
+                      <Text style={styles.currencyCodeText}>{item.code}</Text>
+                      <Text style={styles.currencyNameText}>{item.name}</Text>
+                    </View>
+                    <Text style={styles.currencySymbolText}>{item.symbol}</Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -196,12 +309,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+
+  // Price & Currency Selector Layout
+  priceRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  currencySelectorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minWidth: 120,
+    gap: 6,
+  },
+  currencySelectorText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  priceInput: {
+    flex: 1,
+  },
+
   textArea: {
     minHeight: 90,
     textAlignVertical: 'top',
   },
 
-  // Dark Navy Primary Button
   submitBtn: {
     backgroundColor: '#0F172A',
     paddingVertical: 14,
@@ -214,4 +355,63 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  currencyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  currencyItemSelected: {
+    backgroundColor: '#F1F5F9',
+  },
+  currencyItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  currencyCodeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+    width: 45,
+  },
+  currencyNameText: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  currencySymbolText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
 });

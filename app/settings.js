@@ -6,200 +6,357 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
+  Modal,
+  FlatList,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import { triggerHaptic } from '../utils/haptics';
+
+const POPULAR_CURRENCIES = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  { code: 'PKR', name: 'Pakistani Rupee', symbol: 'Rs' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'AED' },
+  { code: 'SAR', name: 'Saudi Riyal', symbol: 'SAR' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
+  { code: 'MXN', name: 'Mexican Peso', symbol: 'MX$' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
+  { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+  { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+  { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+  { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
+  { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
+  { code: 'PLN', name: 'Polish Zloty', symbol: 'zł' },
+  { code: 'THB', name: 'Thai Baht', symbol: '฿' },
+  { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp' },
+  { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
+  { code: 'PHP', name: 'Philippine Peso', symbol: '₱' },
+  { code: 'EGP', name: 'Egyptian Pound', symbol: 'E£' },
+];
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const {
+    themeMode,
+    colors,
+    hapticsEnabled,
+    defaultCurrency,
+    updateThemeMode,
+    updateHapticsEnabled,
+    updateDefaultCurrency,
+  } = useTheme();
 
-  const [selectedCurrency, setSelectedCurrency] = useState('USD ($)');
-  const [hapticFeedback, setHapticFeedback] = useState(true);
-  const [autoBackup, setAutoBackup] = useState(false);
+  const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
 
-  const currencies = ['USD ($)', 'EUR (€)', 'GBP (£)', 'PKR (Rs)', 'CAD ($)'];
-
-  const handleExportData = () => {
-    Alert.alert(
-      'Export Database',
-      'Your inventory data has been prepared as a JSON file.',
-      [{ text: 'OK' }]
-    );
+  const handleThemeChange = (mode) => {
+    triggerHaptic('selection', hapticsEnabled);
+    updateThemeMode(mode);
   };
 
-  const handleClearData = () => {
-    Alert.alert(
-      'Wipe All Data',
-      'Are you sure you want to delete all items and repair histories? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => {} },
-      ]
-    );
+  const handleHapticsToggle = (val) => {
+    triggerHaptic('medium', true);
+    updateHapticsEnabled(val);
+  };
+
+  const handleSelectCurrency = (item) => {
+    triggerHaptic('selection', hapticsEnabled);
+    updateDefaultCurrency({ code: item.code, symbol: item.symbol });
+    setCurrencyModalVisible(false);
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 24 + insets.bottom,
+        }}
         showsVerticalScrollIndicator={false}
       >
-        {/* SECTION 1: PREFERENCES */}
-        <Text style={styles.sectionHeader}>Preferences</Text>
-        <View style={styles.card}>
-          {/* Currency Choice */}
-          <View style={styles.row}>
-            <View style={styles.rowLabelGroup}>
-              <Feather name="dollar-sign" size={16} color="#0F172A" />
-              <Text style={styles.rowTitle}>Default Currency</Text>
-            </View>
-            <Text style={styles.rowValue}>{selectedCurrency}</Text>
-          </View>
+        {/* SECTION: PREFERENCES */}
+        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>
+          PREFERENCES
+        </Text>
 
-          <View style={styles.divider} />
-
-          {/* Theme Option */}
-          <View style={styles.row}>
-            <View style={styles.rowLabelGroup}>
-              <Feather name="moon" size={16} color="#0F172A" />
-              <Text style={styles.rowTitle}>Theme</Text>
-            </View>
-            <Text style={styles.rowValue}>Monochrome Dark Navy</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Haptics */}
-          <View style={styles.row}>
-            <View style={styles.rowLabelGroup}>
-              <Feather name="sliders" size={16} color="#0F172A" />
-              <Text style={styles.rowTitle}>Haptic Feedback</Text>
-            </View>
-            <Switch
-              value={hapticFeedback}
-              onValueChange={setHapticFeedback}
-              trackColor={{ false: '#CBD5E1', true: '#0F172A' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        </View>
-
-        {/* SECTION 2: DATA & BACKUP */}
-        <Text style={styles.sectionHeader}>Data Management</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.row} onPress={handleExportData}>
-            <View style={styles.rowLabelGroup}>
-              <Feather name="download" size={16} color="#0F172A" />
-              <Text style={styles.rowTitle}>Export Inventory Data</Text>
-            </View>
-            <Feather name="chevron-right" size={16} color="#94A3B8" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <View style={styles.row}>
-            <View style={styles.rowLabelGroup}>
-              <Feather name="refresh-cw" size={16} color="#0F172A" />
-              <Text style={styles.rowTitle}>Auto-Backup to Storage</Text>
-            </View>
-            <Switch
-              value={autoBackup}
-              onValueChange={setAutoBackup}
-              trackColor={{ false: '#CBD5E1', true: '#0F172A' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity style={styles.row} onPress={handleClearData}>
-            <View style={styles.rowLabelGroup}>
-              <Feather name="trash-2" size={16} color="#EF4444" />
-              <Text style={[styles.rowTitle, { color: '#EF4444' }]}>
-                Clear Database
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color="#94A3B8" />
-          </TouchableOpacity>
-        </View>
-
-        {/* SECTION 3: HELP & FAQ */}
-        <Text style={styles.sectionHeader}>Support & Info</Text>
-        <View style={styles.card}>
+        {/* Currency Selector */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.row}
-            onPress={() =>
-              Alert.alert('Location Paths FAQ', 'Use "Room > Unit > Container" format for seamless searching (e.g. Living Room > Shelf 3).')
-            }
+            style={styles.rowItem}
+            onPress={() => {
+              triggerHaptic('light', hapticsEnabled);
+              setCurrencyModalVisible(true);
+            }}
+            activeOpacity={0.7}
           >
-            <View style={styles.rowLabelGroup}>
-              <Feather name="help-circle" size={16} color="#0F172A" />
-              <Text style={styles.rowTitle}>Frequently Asked Questions</Text>
+            <View style={styles.rowLeft}>
+              <Feather name="dollar-sign" size={18} color={colors.text} />
+              <View>
+                <Text style={[styles.rowTitle, { color: colors.text }]}>Default Currency</Text>
+                <Text style={[styles.rowSubtitle, { color: colors.textMuted }]}>
+                  Used for new asset entries
+                </Text>
+              </View>
             </View>
-            <Feather name="chevron-right" size={16} color="#94A3B8" />
+
+            <View style={styles.rowRight}>
+              <Text style={[styles.valueText, { color: colors.primary }]}>
+                {defaultCurrency.code} ({defaultCurrency.symbol})
+              </Text>
+              <Feather name="chevron-right" size={18} color={colors.textMuted} />
+            </View>
           </TouchableOpacity>
+        </View>
 
-          <View style={styles.divider} />
+        {/* SECTION: APPEARANCE */}
+        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>
+          APPEARANCE
+        </Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.themeSelector}>
+            {['light', 'dark', 'system'].map((mode) => {
+              const isActive = themeMode === mode;
+              return (
+                <TouchableOpacity
+                  key={mode}
+                  style={[
+                    styles.themeBtn,
+                    {
+                      backgroundColor: isActive ? colors.primary : 'transparent',
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => handleThemeChange(mode)}
+                  activeOpacity={0.8}
+                >
+                  <Feather
+                    name={mode === 'light' ? 'sun' : mode === 'dark' ? 'moon' : 'monitor'}
+                    size={16}
+                    color={isActive ? colors.primaryText : colors.text}
+                  />
+                  <Text
+                    style={[
+                      styles.themeBtnText,
+                      { color: isActive ? colors.primaryText : colors.text },
+                    ]}
+                  >
+                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
 
-          <View style={styles.row}>
-            <View style={styles.rowLabelGroup}>
-              <Feather name="info" size={16} color="#0F172A" />
-              <Text style={styles.rowTitle}>Version</Text>
+        {/* SECTION: FEEDBACK & ACCESSIBILITY */}
+        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>
+          FEEDBACK & ACCESSIBILITY
+        </Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.rowItem}>
+            <View style={styles.rowLeft}>
+              <Feather name="smartphone" size={18} color={colors.text} />
+              <View>
+                <Text style={[styles.rowTitle, { color: colors.text }]}>Haptic Feedback</Text>
+                <Text style={[styles.rowSubtitle, { color: colors.textMuted }]}>
+                  Vibrate on touch and actions
+                </Text>
+              </View>
             </View>
-            <Text style={styles.rowValue}>1.0.0 (SQLite Local)</Text>
+            <Switch
+              value={hapticsEnabled}
+              onValueChange={handleHapticsToggle}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#FFFFFF"
+            />
           </View>
         </View>
       </ScrollView>
+
+      {/* Currency Picker Modal */}
+      <Modal
+        visible={currencyModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setCurrencyModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}
+          activeOpacity={1}
+          onPress={() => setCurrencyModalVisible(false)}
+        >
+          <View
+            style={[styles.modalContent, { backgroundColor: colors.background }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Select Default Currency
+              </Text>
+              <TouchableOpacity onPress={() => setCurrencyModalVisible(false)}>
+                <Feather name="x" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={POPULAR_CURRENCIES}
+              keyExtractor={(item) => item.code}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const isSelected = item.code === defaultCurrency.code;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.currencyItem,
+                      isSelected && { backgroundColor: colors.card },
+                    ]}
+                    onPress={() => handleSelectCurrency(item)}
+                  >
+                    <View style={styles.currencyLeft}>
+                      <Text style={[styles.currencyCode, { color: colors.text }]}>
+                        {item.code}
+                      </Text>
+                      <Text style={[styles.currencyName, { color: colors.textMuted }]}>
+                        {item.name}
+                      </Text>
+                    </View>
+                    <Text style={[styles.currencySymbol, { color: colors.text }]}>
+                      {item.symbol}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#FFFFFF' },
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
-
+  screen: { flex: 1 },
   sectionHeader: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    marginTop: 18,
     marginBottom: 8,
-    marginTop: 12,
+    letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     paddingHorizontal: 14,
-    marginBottom: 8,
+    paddingVertical: 12,
   },
-  row: {
+  rowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  rowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rowTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  valueText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  // Theme Segmented Control
+  themeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  themeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  themeBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+    padding: 20,
+  },
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
   },
-  rowLabelGroup: {
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  currencyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  currencyLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
-  rowTitle: {
+  currencyCode: {
     fontSize: 14,
+    fontWeight: '700',
+    width: 45,
+  },
+  currencyName: {
+    fontSize: 14,
+  },
+  currencySymbol: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#0F172A',
-  },
-  rowValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#64748B',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
   },
 });

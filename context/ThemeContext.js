@@ -1,0 +1,100 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const THEME_KEY = '@app_theme_mode';
+const HAPTICS_KEY = '@app_haptics_enabled';
+const DEFAULT_CURRENCY_KEY = '@app_default_currency';
+
+export const LIGHT_COLORS = {
+  background: '#FFFFFF',
+  card: '#F8FAFC',
+  text: '#0F172A',
+  textMuted: '#64748B',
+  border: '#E2E8F0',
+  primary: '#0F172A',
+  primaryText: '#FFFFFF',
+  danger: '#EF4444',
+  modalOverlay: 'rgba(15, 23, 42, 0.4)',
+};
+
+export const DARK_COLORS = {
+  background: '#0F172A',
+  card: '#1E293B',
+  text: '#F8FAFC',
+  textMuted: '#94A3B8',
+  border: '#334155',
+  primary: '#38BDF8',
+  primaryText: '#0F172A',
+  danger: '#F87171',
+  modalOverlay: 'rgba(0, 0, 0, 0.7)',
+};
+
+const ThemeContext = createContext();
+
+export function ThemeProvider({ children }) {
+  const systemColorScheme = useColorScheme();
+  const [themeMode, setThemeMode] = useState('system'); // 'light' | 'dark' | 'system'
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [defaultCurrency, setDefaultCurrency] = useState({ code: 'USD', symbol: '$' });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedTheme = await AsyncStorage.getItem(THEME_KEY);
+        if (savedTheme) setThemeMode(savedTheme);
+
+        const savedHaptics = await AsyncStorage.getItem(HAPTICS_KEY);
+        if (savedHaptics !== null) setHapticsEnabled(savedHaptics === 'true');
+
+        const savedCurrency = await AsyncStorage.getItem(DEFAULT_CURRENCY_KEY);
+        if (savedCurrency) setDefaultCurrency(JSON.parse(savedCurrency));
+      } catch (e) {
+        console.error('Failed to load settings context', e);
+      }
+    })();
+  }, []);
+
+  const activeMode = themeMode === 'system' ? systemColorScheme || 'light' : themeMode;
+  const colors = activeMode === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+
+  const updateThemeMode = async (mode) => {
+    setThemeMode(mode);
+    await AsyncStorage.setItem(THEME_KEY, mode);
+  };
+
+  const updateHapticsEnabled = async (val) => {
+    setHapticsEnabled(val);
+    await AsyncStorage.setItem(HAPTICS_KEY, String(val));
+  };
+
+  const updateDefaultCurrency = async (currencyObj) => {
+    setDefaultCurrency(currencyObj);
+    await AsyncStorage.setItem(DEFAULT_CURRENCY_KEY, JSON.stringify(currencyObj));
+  };
+
+  return (
+    <ThemeContext.Provider
+      value={{
+        themeMode,
+        activeMode,
+        colors,
+        hapticsEnabled,
+        defaultCurrency,
+        updateThemeMode,
+        updateHapticsEnabled,
+        updateDefaultCurrency,
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
