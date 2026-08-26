@@ -78,6 +78,12 @@ export default function ItemDetailsScreen() {
     return `${yy}-${mm}-${dd}`;
   };
 
+  const resetRepairForm = () => {
+    setForm({ date: '', cost: '', provider: '', description: '' });
+    setShowForm(false);
+    setShowRepairDatePicker(false);
+  };
+
   const saveRepair = async () => {
     if (!form.date || !form.provider) {
       Alert.alert('Validation', 'Please provide date and provider.');
@@ -88,15 +94,33 @@ export default function ItemDetailsScreen() {
       await storage.saveRepair(id, newRepair);
       const list = await storage.getRepairs(id);
       setRepairs(list || []);
-      setForm({ date: '', cost: '', provider: '', description: '' });
-      setShowForm(false);
+      resetRepairForm();
     } catch (err) {
       Alert.alert('Error', 'Failed to save repair.');
     }
   };
 
+  const cancelRepair = () => {
+    resetRepairForm();
+  };
+
+  const openRepair = () => {
+    resetRepairForm();
+    setShowForm(true);
+  };
+
   // Item edit/delete handlers
   const openEditItem = () => {
+    setEditItemForm({
+      name: parentItem?.name || '',
+      location: parentItem?.location || '',
+      purchasePrice: parentItem?.purchasePrice || '',
+      currency: parentItem?.currency || defaultCurrency?.code || 'USD',
+      currencySymbol: parentItem?.currencySymbol || defaultCurrency?.symbol || '$',
+      warrantyUntil: parentItem?.warrantyUntil || '',
+      notes: parentItem?.notes || '',
+    });
+    setShowItemWarrantyPicker(false);
     setEditItemModalVisible(true);
   };
 
@@ -112,11 +136,22 @@ export default function ItemDetailsScreen() {
         warrantyUntil: editItemForm.warrantyUntil,
         notes: editItemForm.notes,
       });
-      setEditItemModalVisible(false);
-      // refresh parent item
+      // refresh parent item and close modal cleanly
       const items = await storage.getItems();
       const it = (items || []).find((i) => String(i.id) === String(id));
       setParentItem(it);
+      // update edit form to the saved values
+      setEditItemForm({
+        name: it?.name || '',
+        location: it?.location || '',
+        purchasePrice: it?.purchasePrice || '',
+        currency: it?.currency || defaultCurrency?.code || 'USD',
+        currencySymbol: it?.currencySymbol || defaultCurrency?.symbol || '$',
+        warrantyUntil: it?.warrantyUntil || '',
+        notes: it?.notes || '',
+      });
+      setShowItemWarrantyPicker(false);
+      setEditItemModalVisible(false);
     } catch (e) {
       Alert.alert('Error', 'Failed to update item.');
     }
@@ -159,8 +194,7 @@ export default function ItemDetailsScreen() {
       });
       const list = await storage.getRepairs(id);
       setRepairs(list || []);
-      setRepairEditModalVisible(false);
-      setEditingRepair(null);
+      closeEditRepairModal();
     } catch (e) {
       Alert.alert('Error', 'Failed to update repair.');
     }
@@ -179,6 +213,35 @@ export default function ItemDetailsScreen() {
         }
       } }
     ]);
+  };
+
+  // Modal close helpers to keep state consistent
+  const closeRepairCurrencyModal = () => {
+    setRepairCurrencyModalVisible(false);
+    setRepairCurrencyModalTarget('form');
+  };
+
+  const closeEditRepairModal = () => {
+    setRepairEditModalVisible(false);
+    setEditingRepair(null);
+    setEditRepairForm({ date: '', cost: '', provider: '', description: '', currency: defaultCurrency?.code || 'USD', currencySymbol: defaultCurrency?.symbol || '$' });
+    setShowRepairDatePicker(false);
+  };
+
+  const closeEditItemModal = () => {
+    setEditItemModalVisible(false);
+    // reset form to parent item values
+    setEditItemForm({
+      name: parentItem?.name || '',
+      location: parentItem?.location || '',
+      purchasePrice: parentItem?.purchasePrice || '',
+      currency: parentItem?.currency || defaultCurrency?.code || 'USD',
+      currencySymbol: parentItem?.currencySymbol || defaultCurrency?.symbol || '$',
+      warrantyUntil: parentItem?.warrantyUntil || '',
+      notes: parentItem?.notes || '',
+    });
+    setShowItemWarrantyPicker(false);
+    setRepairCurrencyModalTarget('form');
   };
 
   const renderItem = ({ item }) => (
@@ -298,13 +361,16 @@ export default function ItemDetailsScreen() {
                   value={form.date ? new Date(form.date) : new Date()}
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onDismiss={() => setShowRepairDatePicker(false)}
                   onValueChange={(event, selectedDate) => {
-                    if (Platform.OS !== 'ios') {
-                      setShowRepairDatePicker(false);
-                    }
+                    
+                    setShowRepairDatePicker(false);
+                    
                     if (event.type !== 'dismissed' && selectedDate) {
                       setForm((s) => ({ ...s, date: formatDate(selectedDate) }));
+
                     }
+                    
                   }}
                 />
               ) : null}
@@ -352,12 +418,12 @@ export default function ItemDetailsScreen() {
               <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8, borderColor: colors.primary }]} onPress={saveRepair}>
                 <Text style={[styles.addRepairText, { color: colors.primary }]}>Save Repair</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: colors.card, marginTop: 8 }]} onPress={() => setShowForm(false)}>
+              <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: colors.card, marginTop: 8 }]} onPress={cancelRepair}>
                 <Text style={{ color: colors.textMuted }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity style={[styles.addRepairBtn, { borderColor: colors.primary }]} onPress={() => setShowForm(true)}>
+            <TouchableOpacity style={[styles.addRepairBtn, { borderColor: colors.primary }]} onPress={openRepair}>
               <Text style={[styles.addRepairText, { color: colors.primary }]}>+ Log New Repair</Text>
             </TouchableOpacity>
           )}
@@ -367,12 +433,12 @@ export default function ItemDetailsScreen() {
             visible={repairCurrencyModalVisible}
             animationType="none"
             transparent
-            onRequestClose={() => setRepairCurrencyModalVisible(false)}
+            onRequestClose={closeRepairCurrencyModal}
           >
             <TouchableOpacity
               style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
               activeOpacity={1}
-              onPress={() => setRepairCurrencyModalVisible(false)}
+              onPress={closeRepairCurrencyModal}
             >
               {BlurViewComp ? (
                 <BlurViewComp intensity={60} style={StyleSheet.absoluteFill} />
@@ -382,7 +448,7 @@ export default function ItemDetailsScreen() {
               <Animated.View style={{ width: '92%', backgroundColor: colors.background, borderRadius: 14, maxHeight: '70%', padding: 18, borderWidth: 1, borderColor: colors.border, transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Select Currency</Text>
-                  <TouchableOpacity onPress={() => setRepairCurrencyModalVisible(false)}>
+                  <TouchableOpacity onPress={closeRepairCurrencyModal}>
                     <Text style={{ color: colors.textMuted }}>Close</Text>
                   </TouchableOpacity>
                 </View>
@@ -400,10 +466,9 @@ export default function ItemDetailsScreen() {
                               setEditItemForm((s) => ({ ...s, currency: item.code, currencySymbol: item.symbol }));
                             } else {
                               setRepairCurrency(item.code);
-                              setRepairCurrencySymbol(item.symbol);
-                            }
-                            setRepairCurrencyModalVisible(false);
-                            setRepairCurrencyModalTarget('form');
+                                setRepairCurrencySymbol(item.symbol);
+                              }
+                              closeRepairCurrencyModal();
                           }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -419,8 +484,8 @@ export default function ItemDetailsScreen() {
           </Modal>
 
           {/* Edit Item Modal */}
-          <Modal visible={editItemModalVisible} animationType="none" transparent onRequestClose={() => setEditItemModalVisible(false)}>
-            <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setEditItemModalVisible(false)}>
+          <Modal visible={editItemModalVisible} animationType="none" transparent onRequestClose={closeEditItemModal}>
+            <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={closeEditItemModal}>
               {BlurViewComp ? (
                 <BlurViewComp intensity={60} style={StyleSheet.absoluteFill} />
               ) : (
@@ -429,7 +494,7 @@ export default function ItemDetailsScreen() {
               <Animated.View style={{ width: '92%', backgroundColor: colors.background, borderRadius: 14, maxHeight: '80%', padding: 18, borderWidth: 1, borderColor: colors.border, transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Edit Item</Text>
-                  <TouchableOpacity onPress={() => setEditItemModalVisible(false)}>
+                  <TouchableOpacity onPress={closeEditItemModal}>
                     <Text style={{ color: colors.textMuted }}>Close</Text>
                   </TouchableOpacity>
                 </View>
@@ -460,10 +525,11 @@ export default function ItemDetailsScreen() {
                   }
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onDismiss={() => setShowRepairDatePicker(false)}
                   onValueChange={(event, selectedDate) => {
-                    if (Platform.OS !== 'ios') {
-                      setShowItemWarrantyPicker(false);
-                    }
+
+                    setShowItemWarrantyPicker(false);
+                    
                     if (event.type !== 'dismissed' && selectedDate) {
                       setEditItemForm((s) => ({ ...s, warrantyUntil: formatDate(selectedDate) }));
                     }
@@ -482,8 +548,8 @@ export default function ItemDetailsScreen() {
           </Modal>
 
           {/* Edit Repair Modal */}
-          <Modal visible={repairEditModalVisible} animationType="none" transparent onRequestClose={() => setRepairEditModalVisible(false)}>
-            <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setRepairEditModalVisible(false)}>
+          <Modal visible={repairEditModalVisible} animationType="none" transparent onRequestClose={closeEditRepairModal}>
+            <TouchableOpacity style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={closeEditRepairModal}>
               {BlurViewComp ? (
                 <BlurViewComp intensity={60} style={StyleSheet.absoluteFill} />
               ) : (
@@ -492,7 +558,7 @@ export default function ItemDetailsScreen() {
               <Animated.View style={{ width: '92%', backgroundColor: colors.background, borderRadius: 14, maxHeight: '80%', padding: 18, borderWidth: 1, borderColor: colors.border, transform: [{ scale: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }], opacity: modalAnim }} onStartShouldSetResponder={() => true}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Edit Repair</Text>
-                  <TouchableOpacity onPress={() => setRepairEditModalVisible(false)}>
+                  <TouchableOpacity onPress={closeEditRepairModal}>
                     <Text style={{ color: colors.textMuted }}>Close</Text>
                   </TouchableOpacity>
                 </View>
@@ -510,10 +576,11 @@ export default function ItemDetailsScreen() {
                   }
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onDismiss={() => setShowRepairDatePicker(false)}
                   onValueChange={(event, selectedDate) => {
-                    if (Platform.OS !== 'ios') {
-                      setShowRepairDatePicker(false);
-                    }
+                    
+                    setShowRepairDatePicker(false);
+                    
                     if (event.type !== 'dismissed' && selectedDate) {
                       setEditRepairForm((s) => ({ ...s, date: formatDate(selectedDate) }));
                     }
