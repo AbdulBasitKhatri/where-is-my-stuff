@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Switch,
   Modal,
   FlatList,
   Alert,
@@ -13,7 +12,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { triggerHaptic } from '../utils/haptics';
 
 const POPULAR_CURRENCIES = [
   { code: 'USD', name: 'US Dollar', symbol: '$' },
@@ -53,27 +51,25 @@ export default function SettingsScreen() {
   const {
     themeMode,
     colors,
-    hapticsEnabled,
     defaultCurrency,
     updateThemeMode,
-    updateHapticsEnabled,
     updateDefaultCurrency,
   } = useTheme();
 
+  const FAQ_ITEMS = [
+    { q: 'Why can\'t I feel haptics?', a: 'Haptics were removed from this build for broader compatibility.' },
+    { q: 'Where are items stored?', a: 'Items are stored locally using AsyncStorage on your device.' },
+    { q: 'How do I change default currency?', a: 'Open the Default Currency setting and choose a currency.' },
+  ];
+
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+  const [faqModalVisible, setFaqModalVisible] = useState(false);
 
   const handleThemeChange = (mode) => {
-    triggerHaptic('selection', hapticsEnabled);
     updateThemeMode(mode);
   };
 
-  const handleHapticsToggle = (val) => {
-    triggerHaptic('medium', true);
-    updateHapticsEnabled(val);
-  };
-
   const handleSelectCurrency = (item) => {
-    triggerHaptic('selection', hapticsEnabled);
     updateDefaultCurrency({ code: item.code, symbol: item.symbol });
     setCurrencyModalVisible(false);
   };
@@ -97,10 +93,7 @@ export default function SettingsScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TouchableOpacity
             style={styles.rowItem}
-            onPress={() => {
-              triggerHaptic('light', hapticsEnabled);
-              setCurrencyModalVisible(true);
-            }}
+            onPress={() => setCurrencyModalVisible(true)}
             activeOpacity={0.7}
           >
             <View style={styles.rowLeft}>
@@ -163,26 +156,23 @@ export default function SettingsScreen() {
         </View>
 
         {/* SECTION: FEEDBACK & ACCESSIBILITY */}
-        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>
+        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}> 
           FEEDBACK & ACCESSIBILITY
         </Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.rowItem}>
             <View style={styles.rowLeft}>
-              <Feather name="smartphone" size={18} color={colors.text} />
+              <Feather name="info" size={18} color={colors.text} />
               <View>
-                <Text style={[styles.rowTitle, { color: colors.text }]}>Haptic Feedback</Text>
+                <Text style={[styles.rowTitle, { color: colors.text }]}>FAQ & Help</Text>
                 <Text style={[styles.rowSubtitle, { color: colors.textMuted }]}>
-                  Vibrate on touch and actions
+                  Common questions and troubleshooting
                 </Text>
               </View>
             </View>
-            <Switch
-              value={hapticsEnabled}
-              onValueChange={handleHapticsToggle}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#FFFFFF"
-            />
+            <TouchableOpacity onPress={() => setFaqModalVisible(true)}>
+              <Feather name="chevron-right" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -240,6 +230,31 @@ export default function SettingsScreen() {
                   </TouchableOpacity>
                 );
               }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+
+      {/* FAQ Modal */}
+      <Modal visible={faqModalVisible} animationType="slide" transparent onRequestClose={() => setFaqModalVisible(false)}>
+        <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]} activeOpacity={1} onPress={() => setFaqModalVisible(false)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}> 
+              <Text style={[styles.modalTitle, { color: colors.text }]}>FAQ & Help</Text>
+              <TouchableOpacity onPress={() => setFaqModalVisible(false)}>
+                <Feather name="x" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={FAQ_ITEMS}
+              keyExtractor={(i, idx) => String(idx)}
+              renderItem={({ item }) => (
+                <View style={{ paddingVertical: 12 }}>
+                  <Text style={{ fontWeight: '700', color: colors.text }}>{item.q}</Text>
+                  <Text style={{ color: colors.textMuted, marginTop: 6 }}>{item.a}</Text>
+                </View>
+              )}
             />
           </View>
         </TouchableOpacity>

@@ -3,7 +3,6 @@ import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const THEME_KEY = '@app_theme_mode';
-const HAPTICS_KEY = '@app_haptics_enabled';
 const DEFAULT_CURRENCY_KEY = '@app_default_currency';
 
 export const LIGHT_COLORS = {
@@ -34,8 +33,8 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState('system'); // 'light' | 'dark' | 'system'
-  const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [themeMode, setThemeMode] = useState('light'); // 'light' | 'dark' | 'system'
+  // haptics feature removed: persistent preference no longer stored
   const [defaultCurrency, setDefaultCurrency] = useState({ code: 'USD', symbol: '$' });
 
   useEffect(() => {
@@ -43,9 +42,6 @@ export function ThemeProvider({ children }) {
       try {
         const savedTheme = await AsyncStorage.getItem(THEME_KEY);
         if (savedTheme) setThemeMode(savedTheme);
-
-        const savedHaptics = await AsyncStorage.getItem(HAPTICS_KEY);
-        if (savedHaptics !== null) setHapticsEnabled(savedHaptics === 'true');
 
         const savedCurrency = await AsyncStorage.getItem(DEFAULT_CURRENCY_KEY);
         if (savedCurrency) setDefaultCurrency(JSON.parse(savedCurrency));
@@ -58,15 +54,15 @@ export function ThemeProvider({ children }) {
   const activeMode = themeMode === 'system' ? systemColorScheme || 'light' : themeMode;
   const colors = activeMode === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 
+  const isDark = activeMode === 'dark';
+  const theme = colors; // backward-friendly alias expected by some screens
+
   const updateThemeMode = async (mode) => {
     setThemeMode(mode);
     await AsyncStorage.setItem(THEME_KEY, mode);
   };
 
-  const updateHapticsEnabled = async (val) => {
-    setHapticsEnabled(val);
-    await AsyncStorage.setItem(HAPTICS_KEY, String(val));
-  };
+  // haptics preference removed
 
   const updateDefaultCurrency = async (currencyObj) => {
     setDefaultCurrency(currencyObj);
@@ -79,10 +75,10 @@ export function ThemeProvider({ children }) {
         themeMode,
         activeMode,
         colors,
-        hapticsEnabled,
+        theme,
+        isDark,
         defaultCurrency,
         updateThemeMode,
-        updateHapticsEnabled,
         updateDefaultCurrency,
       }}
     >

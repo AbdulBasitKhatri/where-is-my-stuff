@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, K
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import storage from '../utils/storage';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ItemDetailsScreen() {
   const { id, name } = useLocalSearchParams();
@@ -22,6 +23,8 @@ export default function ItemDetailsScreen() {
     })();
   }, [id]);
 
+  const { colors } = useTheme();
+
   const saveRepair = async () => {
     if (!form.date || !form.provider) {
       Alert.alert('Validation', 'Please provide date and provider.');
@@ -40,24 +43,24 @@ export default function ItemDetailsScreen() {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.repairCard}>
+    <View style={[styles.repairCard, { backgroundColor: colors.card }]}> 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={styles.repairProvider}>{item.provider}</Text>
-        <Text style={styles.repairCost}>${(item.cost || 0).toFixed(2)}</Text>
+        <Text style={[styles.repairProvider, { color: colors.text }]}>{item.provider}</Text>
+        <Text style={[styles.repairCost, { color: colors.danger }]}>{`$${(item.cost || 0).toFixed(2)}`}</Text>
       </View>
-      <Text style={styles.repairDesc}>{item.description}</Text>
-      <Text style={styles.repairDate}>{item.date}</Text>
+      <Text style={[styles.repairDesc, { color: colors.textMuted }]}>{item.description}</Text>
+      <Text style={[styles.repairDate, { color: colors.textMuted }]}>{item.date}</Text>
     </View>
   );
 
   const ListHeader = () => (
     <>
-      <View style={styles.headerBox}>
-        <Text style={styles.title}>{name}</Text>
-        <Text style={styles.location}>Location: Office &gt; Desk</Text>
-        <Text style={styles.warranty}>Warranty Expires: Nov 15, 2027</Text>
+      <View style={[styles.headerBox, { backgroundColor: colors.card }]}> 
+        <Text style={[styles.title, { color: colors.text }]}>{name}</Text>
+        <Text style={[styles.location, { color: colors.textMuted }]}>Location: Office &gt; Desk</Text>
+        <Text style={[styles.warranty, { color: colors.text }]}>{'Warranty Expires: N/A'}</Text>
       </View>
-      <Text style={styles.sectionHeader}>Maintenance & Repair Logs</Text>
+      <Text style={[styles.sectionHeader, { color: colors.text }]}>Maintenance & Repair Logs</Text>
     </>
   );
 
@@ -65,19 +68,19 @@ export default function ItemDetailsScreen() {
     <>
       {showForm ? (
         <View style={{ marginTop: 12 }}>
-          <Text style={styles.label}>Date</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#71717A" value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} blurOnSubmit={false} />
-          <Text style={styles.label}>Provider</Text>
-          <TextInput style={styles.input} placeholder="e.g. Apple Store" placeholderTextColor="#71717A" value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} blurOnSubmit={false} />
-          <Text style={styles.label}>Cost ($)</Text>
-          <TextInput style={styles.input} placeholder="e.g. 120.00" placeholderTextColor="#71717A" keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} blurOnSubmit={false} />
-          <Text style={styles.label}>Description</Text>
-          <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="What was done" placeholderTextColor="#71717A" multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} blurOnSubmit={false} />
-          <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8 }]} onPress={saveRepair}>
-            <Text style={styles.addRepairText}>Save Repair</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Date</Text>
+          <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} blurOnSubmit={false} />
+          <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
+          <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} placeholder="e.g. Apple Store" placeholderTextColor={colors.textMuted} value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} blurOnSubmit={false} />
+          <Text style={[styles.label, { color: colors.text }]}>Cost ($)</Text>
+          <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} placeholder="e.g. 120.00" placeholderTextColor={colors.textMuted} keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} blurOnSubmit={false} />
+          <Text style={[styles.label, { color: colors.text }]}>Description</Text>
+          <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]} placeholder="What was done" placeholderTextColor={colors.textMuted} multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} blurOnSubmit={false} />
+          <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8, borderColor: colors.primary }]} onPress={saveRepair}>
+            <Text style={[styles.addRepairText, { color: colors.primary }]}>Save Repair</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: '#27272A', marginTop: 8 }]} onPress={() => setShowForm(false)}>
-            <Text style={{ color: '#A1A1AA' }}>Cancel</Text>
+          <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: colors.card, marginTop: 8 }]} onPress={() => setShowForm(false)}>
+            <Text style={{ color: colors.textMuted }}>Cancel</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -89,7 +92,7 @@ export default function ItemDetailsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList
           data={repairs}
@@ -97,7 +100,7 @@ export default function ItemDetailsScreen() {
           renderItem={renderItem}
           ListHeaderComponent={ListHeader}
           ListFooterComponent={ListFooter}
-          ListEmptyComponent={<Text style={{ color: '#6B7280', paddingTop: 8 }}>No repairs logged yet.</Text>}
+          ListEmptyComponent={<Text style={{ color: colors.textMuted, paddingTop: 8 }}>No repairs logged yet.</Text>}
           contentContainerStyle={{ paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
         />

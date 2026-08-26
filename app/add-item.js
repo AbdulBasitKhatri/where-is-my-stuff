@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import storage from '../utils/storage';
+import { useTheme } from '../context/ThemeContext';
 
 // 30 Major World Currencies
 const POPULAR_CURRENCIES = [
@@ -56,12 +57,14 @@ export default function AddItemScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const { colors, defaultCurrency } = useTheme();
+
   const [form, setForm] = useState({
     name: '',
     location: '',
     purchasePrice: '',
-    currency: 'USD',
-    currencySymbol: '$',
+    currency: defaultCurrency?.code || 'USD',
+    currencySymbol: defaultCurrency?.symbol || '$',
     warrantyUntil: '',
     notes: '',
   });
@@ -104,7 +107,7 @@ export default function AddItemScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}> 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -120,13 +123,13 @@ export default function AddItemScreen() {
           {/* Item Name Input */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
-              <Feather name="box" size={14} color="#64748B" />
-              <Text style={styles.label}>Item Name *</Text>
+              <Feather name="box" size={14} color={colors.textMuted} />
+              <Text style={[styles.label, { color: colors.text }]}>Item Name *</Text>
             </View>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               placeholder="e.g. Sony Headphones"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               value={form.name}
               onChangeText={(val) => setForm({ ...form, name: val })}
               autoCorrect={false}
@@ -137,13 +140,13 @@ export default function AddItemScreen() {
           {/* Location Path Input */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
-              <Feather name="map-pin" size={14} color="#64748B" />
-              <Text style={styles.label}>Location Path</Text>
+              <Feather name="map-pin" size={14} color={colors.textMuted} />
+              <Text style={[styles.label, { color: colors.text }]}>Location Path</Text>
             </View>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               placeholder="e.g. Bedroom > Closet > Box 2"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               value={form.location}
               onChangeText={(val) => setForm({ ...form, location: val })}
               autoCorrect={false}
@@ -153,29 +156,29 @@ export default function AddItemScreen() {
           {/* Purchase Price & Currency Selector Row */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
-              <Feather name="dollar-sign" size={14} color="#64748B" />
+              <Feather name="dollar-sign" size={14} color={colors.textMuted} />
               <Text style={styles.label}>Purchase Price</Text>
             </View>
 
             <View style={styles.priceRow}>
               {/* Currency Dropdown Button */}
               <TouchableOpacity
-                style={styles.currencySelectorBtn}
+                style={[styles.currencySelectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => setModalVisible(true)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.currencySelectorText}>
+                <Text style={[styles.currencySelectorText, { color: colors.text }]}>
                   {selectedCurrencyObj.code} ({selectedCurrencyObj.symbol})
                 </Text>
-                <Feather name="chevron-down" size={16} color="#64748B" />
+                <Feather name="chevron-down" size={16} color={colors.textMuted} />
               </TouchableOpacity>
 
               {/* Price Numeric Input */}
               <TextInput
-                style={[styles.input, styles.priceInput]}
+                style={[styles.input, styles.priceInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 value={form.purchasePrice}
                 onChangeText={(val) => setForm({ ...form, purchasePrice: val })}
               />
@@ -185,13 +188,13 @@ export default function AddItemScreen() {
           {/* Warranty End Date Input */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
-              <Feather name="shield" size={14} color="#64748B" />
+              <Feather name="shield" size={14} color={colors.textMuted} />
               <Text style={styles.label}>Warranty End Date</Text>
             </View>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               value={form.warrantyUntil}
               onChangeText={(val) => setForm({ ...form, warrantyUntil: val })}
             />
@@ -200,13 +203,13 @@ export default function AddItemScreen() {
           {/* Notes Input */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
-              <Feather name="file-text" size={14} color="#64748B" />
+              <Feather name="file-text" size={14} color={colors.textMuted} />
               <Text style={styles.label}>Notes</Text>
             </View>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               placeholder="Optional details, receipt notes, or serial numbers..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               value={form.notes}
               onChangeText={(val) => setForm({ ...form, notes: val })}
               multiline
@@ -216,15 +219,15 @@ export default function AddItemScreen() {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={[styles.submitBtn, isSaving && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, { backgroundColor: colors.primary }, isSaving && styles.submitBtnDisabled]}
             onPress={handleSave}
             disabled={isSaving}
             activeOpacity={0.85}
           >
             {isSaving ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={colors.primaryText} />
             ) : (
-              <Text style={styles.submitBtnText}>Save Asset</Text>
+              <Text style={[styles.submitBtnText, { color: colors.primaryText }]}>Save Asset</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -238,15 +241,15 @@ export default function AddItemScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}
           activeOpacity={1}
           onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Currency</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Currency</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Feather name="x" size={20} color="#64748B" />
+                <Feather name="x" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -254,13 +257,13 @@ export default function AddItemScreen() {
               data={POPULAR_CURRENCIES}
               keyExtractor={(item) => item.code}
               showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => {
+                renderItem={({ item }) => {
                 const isSelected = item.code === form.currency;
                 return (
                   <TouchableOpacity
                     style={[
                       styles.currencyItem,
-                      isSelected && styles.currencyItemSelected,
+                      isSelected && { backgroundColor: colors.card },
                     ]}
                     onPress={() => {
                       setForm({
@@ -272,10 +275,10 @@ export default function AddItemScreen() {
                     }}
                   >
                     <View style={styles.currencyItemLeft}>
-                      <Text style={styles.currencyCodeText}>{item.code}</Text>
-                      <Text style={styles.currencyNameText}>{item.name}</Text>
+                      <Text style={[styles.currencyCodeText, { color: colors.text }]}>{item.code}</Text>
+                      <Text style={[styles.currencyNameText, { color: colors.textMuted }]}>{item.name}</Text>
                     </View>
-                    <Text style={styles.currencySymbolText}>{item.symbol}</Text>
+                    <Text style={[styles.currencySymbolText, { color: colors.text }]}>{item.symbol}</Text>
                   </TouchableOpacity>
                 );
               }}

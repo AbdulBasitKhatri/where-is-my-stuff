@@ -280,7 +280,7 @@ export default function DashboardScreen() {
                     <Feather
                       name="shield"
                       size={13}
-                      color={warrantyStatus.isExpired ? '#EF4444' : colors.textSecondary}
+                      color={warrantyStatus.isExpired ? colors.danger : colors.textSecondary}
                     />
                     <Text style={[styles.subText, { color: colors.textSecondary }]}>
                       Warranty:{' '}
@@ -288,7 +288,7 @@ export default function DashboardScreen() {
                         style={[
                           styles.subTextBold,
                           { color: colors.text },
-                          warrantyStatus.isExpired && styles.expiredText,
+                          warrantyStatus.isExpired && { color: colors.danger },
                           !warrantyStatus.valid && { color: colors.textSecondary },
                         ]}
                       >
