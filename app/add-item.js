@@ -1,18 +1,51 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import storage from './storage';
 
 export default function AddItemScreen() {
   const router = useRouter();
   const [form, setForm] = useState({ name: '', location: '', purchasePrice: '', warrantyUntil: '', notes: '' });
 
-  const handleSave = () => {
-    // Database insert action goes here
-    router.back();
+  const handleSave = async () => {
+    if (!form.name || !form.name.trim()) {
+      Alert.alert('Validation', 'Please provide an item name.');
+      return;
+    }
+
+    const newItem = {
+      id: Date.now().toString(),
+      name: form.name.trim(),
+      location: form.location || 'Unknown',
+      purchasePrice: form.purchasePrice || '',
+      warrantyUntil: form.warrantyUntil || 'N/A',
+      notes: form.notes || '',
+      repairsCount: 0,
+    };
+
+    try {
+      await storage.saveItem(newItem);
+      router.push({ pathname: '/', params: { refresh: Date.now() } });
+    } catch (err) {
+      Alert.alert('Error', 'Failed to save item.');
+    }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#121214' }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView style={styles.container}>
       <Text style={styles.label}>Item Name</Text>
       <TextInput
         style={styles.input}
@@ -50,10 +83,22 @@ export default function AddItemScreen() {
         onChangeText={(val) => setForm({ ...form, warrantyUntil: val })}
       />
 
+      <Text style={styles.label}>Notes</Text>
+      <TextInput
+        style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+        placeholder="Optional notes about the item"
+        placeholderTextColor="#71717A"
+        value={form.notes}
+        onChangeText={(val) => setForm({ ...form, notes: val })}
+        multiline
+      />
+
       <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
         <Text style={styles.submitBtnText}>Save Asset</Text>
       </TouchableOpacity>
-    </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

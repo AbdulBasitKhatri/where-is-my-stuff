@@ -1,11 +1,13 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
   return (
     <>
-      <StatusBar style="light" />
-      <Stack
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <Stack
         screenOptions={{
           headerStyle: { backgroundColor: '#121214' },
           headerTintColor: '#FFFFFF',
@@ -17,6 +19,7 @@ export default function RootLayout() {
         <Stack.Screen name="add-item" options={{ title: 'Add New Item', presentation: 'modal' }} />
         <Stack.Screen name="item-details" options={{ title: 'Item Overview' }} />
       </Stack>
+      </SafeAreaProvider>
     </>
   );
 }

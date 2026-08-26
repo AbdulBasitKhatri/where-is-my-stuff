@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, useLocalSearchParams } from 'expo-router';
+import storage from './storage';
 
 const MOCK_ITEMS = [
   { id: '1', name: 'MacBook Pro 16"', location: 'Office > Desk', warrantyUntil: '2027-11-15', repairsCount: 1 },
@@ -10,7 +11,20 @@ const MOCK_ITEMS = [
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const [items] = useState(MOCK_ITEMS);
+  const { refresh } = useLocalSearchParams();
+  const [items, setItems] = useState([]);
+  const STORAGE_KEY = '@vault_items';
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await storage.getItems();
+        setItems(list.length ? list : MOCK_ITEMS);
+      } catch (err) {
+        setItems(MOCK_ITEMS);
+      }
+    })();
+  }, [refresh]);
 
   return (
     <View style={styles.container}>

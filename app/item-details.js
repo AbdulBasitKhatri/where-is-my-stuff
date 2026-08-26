@@ -1,47 +1,103 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-
-const MOCK_REPAIRS = [
-  { id: 'r1', date: '2025-08-12', cost: 120.0, provider: 'Apple Store', description: 'Battery replacement' },
-];
+import storage from './storage';
 
 export default function ItemDetailsScreen() {
-  const { name } = useLocalSearchParams();
+  const { id, name } = useLocalSearchParams();
+  const [repairs, setRepairs] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ date: '', cost: '', provider: '', description: '' });
+  const STORAGE_KEY = `@repairs_${id}`;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await storage.getRepairs(id);
+        setRepairs(list || []);
+      } catch (err) {
+        setRepairs([]);
+      }
+    })();
+  }, [id]);
+
+  const saveRepair = async () => {
+    if (!form.date || !form.provider) {
+      Alert.alert('Validation', 'Please provide date and provider.');
+      return;
+    }
+    const newRepair = { id: Date.now().toString(), date: form.date, cost: parseFloat(form.cost) || 0, provider: form.provider, description: form.description };
+    try {
+      await storage.saveRepair(id, newRepair);
+      const list = await storage.getRepairs(id);
+      setRepairs(list || []);
+      setForm({ date: '', cost: '', provider: '', description: '' });
+      setShowForm(false);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to save repair.');
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerBox}>
-        <Text style={styles.title}>{name}</Text>
-        <Text style={styles.location}>Location: Office > Desk</Text>
-        <Text style={styles.warranty}>Warranty Expires: Nov 15, 2027</Text>
-      </View>
-
-      <Text style={styles.sectionHeader}>Maintenance & Repair Logs</Text>
-
-      <FlatList
-        data={MOCK_REPAIRS}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.repairCard}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={styles.repairProvider}>{item.provider}</Text>
-              <Text style={styles.repairCost}>${item.cost.toFixed(2)}</Text>
-            </View>
-            <Text style={styles.repairDesc}>{item.description}</Text>
-            <Text style={styles.repairDate}>{item.date}</Text>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView>
+          <View style={styles.headerBox}>
+            <Text style={styles.title}>{name}</Text>
+            <Text style={styles.location}>Location: Office &gt; Desk</Text>
+            <Text style={styles.warranty}>Warranty Expires: Nov 15, 2027</Text>
           </View>
-        )}
-      />
 
-      <TouchableOpacity style={styles.addRepairBtn}>
-        <Text style={styles.addRepairText}>+ Log New Repair</Text>
-      </TouchableOpacity>
-    </View>
+          <Text style={styles.sectionHeader}>Maintenance & Repair Logs</Text>
+
+          <FlatList
+            data={repairs}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.repairCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={styles.repairProvider}>{item.provider}</Text>
+                  <Text style={styles.repairCost}>${(item.cost || 0).toFixed(2)}</Text>
+                </View>
+                <Text style={styles.repairDesc}>{item.description}</Text>
+                <Text style={styles.repairDate}>{item.date}</Text>
+              </View>
+            )}
+            ListEmptyComponent={<Text style={{ color: '#A1A1AA' }}>No repairs logged yet.</Text>}
+          />
+
+          {showForm ? (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.label}>Date</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#71717A" value={form.date} onChangeText={(t) => setForm({ ...form, date: t })} />
+              <Text style={styles.label}>Provider</Text>
+              <TextInput style={styles.input} placeholder="e.g. Apple Store" placeholderTextColor="#71717A" value={form.provider} onChangeText={(t) => setForm({ ...form, provider: t })} />
+              <Text style={styles.label}>Cost ($)</Text>
+              <TextInput style={styles.input} placeholder="e.g. 120.00" placeholderTextColor="#71717A" keyboardType="numeric" value={form.cost} onChangeText={(t) => setForm({ ...form, cost: t })} />
+              <Text style={styles.label}>Description</Text>
+              <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="What was done" placeholderTextColor="#71717A" multiline value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} />
+              <TouchableOpacity style={[styles.addRepairBtn, { marginTop: 8 }]} onPress={saveRepair}>
+                <Text style={styles.addRepairText}>Save Repair</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.addRepairBtn, { borderWidth: 0, backgroundColor: '#27272A', marginTop: 8 }]} onPress={() => setShowForm(false)}>
+                <Text style={{ color: '#A1A1AA' }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.addRepairBtn} onPress={() => setShowForm(true)}>
+              <Text style={styles.addRepairText}>+ Log New Repair</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 16, backgroundColor: '#121214' },
+  label: { color: '#E4E4E7', fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 12 },
+  input: { backgroundColor: '#1E1E22', color: '#FFF', padding: 14, borderRadius: 8, fontSize: 16 },
   headerBox: { backgroundColor: '#1E1E22', padding: 16, borderRadius: 12, marginBottom: 20 },
   title: { color: '#FFF', fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
   location: { color: '#A1A1AA', fontSize: 14, marginBottom: 4 },
