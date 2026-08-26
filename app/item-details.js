@@ -42,6 +42,9 @@ export default function ItemDetailsScreen() {
   }, [repairCurrencyModalVisible, repairEditModalVisible, editItemModalVisible]);
 
   const [BlurViewComp, setBlurViewComp] = useState(null);
+  const DateTimePickerRef = useRef(null);
+  const [showRepairDatePicker, setShowRepairDatePicker] = useState(false);
+  const [showItemWarrantyPicker, setShowItemWarrantyPicker] = useState(false);
   useEffect(() => {
     try {
       // dynamic require so app doesn't crash if expo-blur isn't installed
@@ -51,7 +54,23 @@ export default function ItemDetailsScreen() {
     } catch (e) {
       setBlurViewComp(null);
     }
+    try {
+      // dynamic require for datetimepicker
+      // eslint-disable-next-line global-require
+      const dt = require('@react-native-community/datetimepicker');
+      DateTimePickerRef.current = dt.default || dt;
+    } catch (e) {
+      DateTimePickerRef.current = null;
+    }
   }, []);
+
+  const formatDate = (d) => {
+    if (!d) return '';
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  };
 
   const saveRepair = async () => {
     if (!form.date || !form.provider) {
@@ -265,14 +284,20 @@ export default function ItemDetailsScreen() {
           {showForm ? (
             <View>
               <Text style={[styles.label, { color: colors.text }]}>Date</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.card, color: colors.text }]}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                value={form.date}
-                onChangeText={(t) => setForm((s) => ({ ...s, date: t }))}
-                blurOnSubmit={false}
-              />
+              <TouchableOpacity style={[styles.input, { backgroundColor: colors.card, justifyContent: 'center' }]} onPress={() => setShowRepairDatePicker(true)}>
+                <Text style={{ color: form.date ? colors.text : colors.textMuted }}>{form.date || 'YYYY-MM-DD'}</Text>
+              </TouchableOpacity>
+              {showRepairDatePicker && DateTimePickerRef.current ? (
+                <DateTimePickerRef.current
+                  value={form.date ? new Date(form.date) : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(e, selected) => {
+                    setShowRepairDatePicker(Platform.OS === 'ios');
+                    if (selected) setForm((s) => ({ ...s, date: formatDate(selected) }));
+                  }}
+                />
+              ) : null}
 
               <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
               <TextInput
@@ -413,7 +438,20 @@ export default function ItemDetailsScreen() {
                 </View>
 
                 <Text style={[styles.label, { color: colors.text }]}>Warranty End Date</Text>
-                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editItemForm.warrantyUntil} onChangeText={(t) => setEditItemForm((s) => ({ ...s, warrantyUntil: t }))} placeholder="YYYY-MM-DD" />
+                <TouchableOpacity style={[styles.input, { backgroundColor: colors.card, justifyContent: 'center' }]} onPress={() => setShowItemWarrantyPicker(true)}>
+                  <Text style={{ color: editItemForm.warrantyUntil ? colors.text : colors.textMuted }}>{editItemForm.warrantyUntil || 'YYYY-MM-DD'}</Text>
+                </TouchableOpacity>
+                {showItemWarrantyPicker && DateTimePickerRef.current ? (
+                  <DateTimePickerRef.current
+                    value={editItemForm.warrantyUntil ? new Date(editItemForm.warrantyUntil) : new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(e, selected) => {
+                      setShowItemWarrantyPicker(Platform.OS === 'ios');
+                      if (selected) setEditItemForm((s) => ({ ...s, warrantyUntil: formatDate(selected) }));
+                    }}
+                  />
+                ) : null}
 
                 <Text style={[styles.label, { color: colors.text }]}>Notes</Text>
                 <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top', backgroundColor: colors.card, color: colors.text }]} value={editItemForm.notes} onChangeText={(t) => setEditItemForm((s) => ({ ...s, notes: t }))} multiline />
@@ -442,7 +480,20 @@ export default function ItemDetailsScreen() {
                 </View>
 
                 <Text style={[styles.label, { color: colors.text }]}>Date</Text>
-                <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.date} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, date: t }))} />
+                <TouchableOpacity style={[styles.input, { backgroundColor: colors.card, justifyContent: 'center' }]} onPress={() => setShowRepairDatePicker(true)}>
+                  <Text style={{ color: editRepairForm.date ? colors.text : colors.textMuted }}>{editRepairForm.date || 'YYYY-MM-DD'}</Text>
+                </TouchableOpacity>
+                {showRepairDatePicker && DateTimePickerRef.current ? (
+                  <DateTimePickerRef.current
+                    value={editRepairForm.date ? new Date(editRepairForm.date) : new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(e, selected) => {
+                      setShowRepairDatePicker(Platform.OS === 'ios');
+                      if (selected) setEditRepairForm((s) => ({ ...s, date: formatDate(selected) }));
+                    }}
+                  />
+                ) : null}
 
                 <Text style={[styles.label, { color: colors.text }]}>Provider</Text>
                 <TextInput style={[styles.input, { backgroundColor: colors.card, color: colors.text }]} value={editRepairForm.provider} onChangeText={(t) => setEditRepairForm((s) => ({ ...s, provider: t }))} />

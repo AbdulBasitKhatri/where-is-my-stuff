@@ -72,6 +72,8 @@ export default function AddItemScreen() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [showWarrantyPicker, setShowWarrantyPicker] = useState(false);
+  const DateTimePickerRef = useRef(null);
   const modalAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(modalAnim, { toValue: modalVisible ? 1 : 0, duration: 220, useNativeDriver: true }).start();
@@ -87,7 +89,23 @@ export default function AddItemScreen() {
     } catch (e) {
       setBlurViewComp(null);
     }
+    try {
+      // attempt to require the community datetimepicker dynamically
+      // eslint-disable-next-line global-require
+      const dt = require('@react-native-community/datetimepicker');
+      DateTimePickerRef.current = dt.default || dt;
+    } catch (e) {
+      DateTimePickerRef.current = null;
+    }
   }, []);
+
+  const formatDate = (d) => {
+    if (!d) return '';
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  };
 
   const selectedCurrencyObj =
     POPULAR_CURRENCIES.find((c) => c.code === form.currency) || POPULAR_CURRENCIES[0];
@@ -202,19 +220,29 @@ export default function AddItemScreen() {
             </View>
           </View>
 
-          {/* Warranty End Date Input */}
+          {/* Warranty End Date Input (Date Picker) */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Feather name="shield" size={14} color={colors.textMuted} />
               <Text style={styles.label}>Warranty End Date</Text>
             </View>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.textMuted}
-              value={form.warrantyUntil}
-              onChangeText={(val) => setForm({ ...form, warrantyUntil: val })}
-            />
+            <TouchableOpacity
+              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, justifyContent: 'center' }]}
+              onPress={() => setShowWarrantyPicker(true)}
+            >
+              <Text style={{ color: form.warrantyUntil ? colors.text : colors.textMuted }}>{form.warrantyUntil || 'YYYY-MM-DD'}</Text>
+            </TouchableOpacity>
+            {showWarrantyPicker && DateTimePickerRef.current ? (
+              <DateTimePickerRef.current
+                value={form.warrantyUntil ? new Date(form.warrantyUntil) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(e, selected) => {
+                  setShowWarrantyPicker(Platform.OS === 'ios');
+                  if (selected) setForm((s) => ({ ...s, warrantyUntil: formatDate(selected) }));
+                }}
+              />
+            ) : null}
           </View>
 
           {/* Notes Input */}
