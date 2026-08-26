@@ -292,10 +292,11 @@ export default function ItemDetailsScreen() {
                   value={form.date ? new Date(form.date) : new Date()}
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(e, selected) => {
-                    setShowRepairDatePicker(Platform.OS === 'ios');
+                  onValueChange={(selected) => {
+                    if (Platform.OS !== 'ios') setShowRepairDatePicker(false);
                     if (selected) setForm((s) => ({ ...s, date: formatDate(selected) }));
                   }}
+                  onDismiss={() => setShowRepairDatePicker(false)}
                 />
               ) : null}
 
@@ -446,10 +447,11 @@ export default function ItemDetailsScreen() {
                     value={editItemForm.warrantyUntil ? new Date(editItemForm.warrantyUntil) : new Date()}
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(e, selected) => {
-                      setShowItemWarrantyPicker(Platform.OS === 'ios');
+                    onValueChange={(selected) => {
+                      if (Platform.OS !== 'ios') setShowItemWarrantyPicker(false);
                       if (selected) setEditItemForm((s) => ({ ...s, warrantyUntil: formatDate(selected) }));
                     }}
+                    onDismiss={() => setShowItemWarrantyPicker(false)}
                   />
                 ) : null}
 
@@ -488,10 +490,11 @@ export default function ItemDetailsScreen() {
                     value={editRepairForm.date ? new Date(editRepairForm.date) : new Date()}
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(e, selected) => {
-                      setShowRepairDatePicker(Platform.OS === 'ios');
+                    onValueChange={(selected) => {
+                      if (Platform.OS !== 'ios') setShowRepairDatePicker(false);
                       if (selected) setEditRepairForm((s) => ({ ...s, date: formatDate(selected) }));
                     }}
+                    onDismiss={() => setShowRepairDatePicker(false)}
                   />
                 ) : null}
 

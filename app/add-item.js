@@ -237,10 +237,11 @@ export default function AddItemScreen() {
                 value={form.warrantyUntil ? new Date(form.warrantyUntil) : new Date()}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(e, selected) => {
-                  setShowWarrantyPicker(Platform.OS === 'ios');
+                onValueChange={(selected) => {
+                  if (Platform.OS !== 'ios') setShowWarrantyPicker(false);
                   if (selected) setForm((s) => ({ ...s, warrantyUntil: formatDate(selected) }));
                 }}
+                onDismiss={() => setShowWarrantyPicker(false)}
               />
             ) : null}
           </View>
